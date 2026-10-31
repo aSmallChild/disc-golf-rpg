@@ -1,16 +1,14 @@
 import { elevationAt, type Hole, type Vec2 } from '@dgrpg/course-format';
 import { DISC_REST_HEIGHT, type ThrowEvent } from '@dgrpg/sim';
 import {
-  AmbientLight,
   Color,
-  DirectionalLight,
   Fog,
   type Group,
-  HemisphereLight,
+  Light,
   Line,
   LineSegments,
   Mesh,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   Raycaster,
   Scene,
@@ -23,6 +21,7 @@ import { createAimGroup } from './aim.ts';
 import { createBasketGroup } from './basket.ts';
 import { type CameraView, type CameraViewName, cameraView } from './camera-views.ts';
 import { createDiscMesh, createTrail, keepDiscReadable } from './disc.ts';
+import { createLights } from './lighting.ts';
 import { palette } from './palette.ts';
 import { positionAt, type Timeline, timeline } from './playback.ts';
 import { createTeePad } from './tee.ts';
@@ -60,6 +59,7 @@ const toVector = ([x, y, z]: readonly [number, number, number]): Vector3 => new 
 
 const disposeObject = (object: { traverse: (fn: (child: unknown) => void) => void }) => {
   object.traverse((child) => {
+    if (child instanceof Light) child.dispose();
     if (child instanceof Mesh || child instanceof LineSegments || child instanceof Line) {
       child.geometry.dispose();
       const materials = Array.isArray(child.material) ? child.material : [child.material];
@@ -83,7 +83,7 @@ export const mountHoleView = (
   const renderer = new WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
 
   const scene = new Scene();
   scene.background = new Color(palette.sky);
@@ -93,18 +93,7 @@ export const mountHoleView = (
   const span = Math.max(width, depth);
   scene.fog = new Fog(palette.fog, span * 1.2, span * 3);
 
-  scene.add(new HemisphereLight(palette.ambientSky, palette.ambientGround, 1.4));
-  scene.add(new AmbientLight(0xffffff, 0.2));
-  const sun = new DirectionalLight(palette.sun, 2);
-  sun.position.set(width * 0.3, span, depth * 0.2);
-  sun.target.position.set(width / 2, 0, depth / 2);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -span;
-  sun.shadow.camera.right = span;
-  sun.shadow.camera.top = span;
-  sun.shadow.camera.bottom = -span;
-  scene.add(sun, sun.target);
+  scene.add(...createLights(width, depth));
 
   const terrain = createTerrainMesh(hole.elevation);
   scene.add(terrain);
