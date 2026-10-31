@@ -20,6 +20,11 @@ export type Player = {
     readonly driving: number;
     readonly putting: number;
   };
+  /**
+   * Luck, golf-scored like the skills (+2 is bad luck). For now it only sways
+   * how trees treat the disc; it will touch everything a little later (`ideas/luck.md`).
+   */
+  readonly luck: number;
   /** Longest Standard Shot in metres. Will come from the Arm stat later. */
   readonly maxRange: number;
   /** Which Planned Shots are unlocked. Will come from the skill tree later. */
@@ -36,6 +41,7 @@ export type Player = {
 export const beginner: Player = {
   name: 'You',
   skills: { driving: 2, putting: 2 },
+  luck: 2,
   maxRange: 110,
   plannedShots: [],
   lines: ['straight'],

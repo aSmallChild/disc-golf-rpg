@@ -35,6 +35,23 @@ export const puttReasons = (player: Player, lie: Vec2, basket: Vec2): readonly R
 export const puttChance = (player: Player, lie: Vec2, basket: Vec2): number =>
   chanceFrom(puttReasons(player, lie, basket), 3, 99);
 
+/** The flight a standard putt aims to fly: to the near side of the centre chains. */
+export const puttAimLeg = (hole: Hole, lie: Vec2): FlightLeg => {
+  const basket = hole.basket;
+  const direction = normalize2(sub2(basket, lie));
+  return {
+    from: toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT),
+    to: toVec3(
+      sub2(basket, scale2(direction, basketDimensions.innerRingRadius * 0.6)),
+      elevationAt(hole, basket) + (basketDimensions.chainAttachHeight + basketDimensions.innerRingHeight) / 2,
+    ),
+    apex: 0.1 + distance2(lie, basket) * 0.04,
+    fade: 0,
+    until: 1,
+    pace: 'putt',
+  };
+};
+
 /** Resolves a putt at the centre of the chains. */
 export const resolvePutt = (hole: Hole, player: Player, lie: Vec2, rng: Rng): PuttResolution => {
   const basket = hole.basket;
@@ -45,21 +62,8 @@ export const resolvePutt = (hole: Hole, player: Player, lie: Vec2, rng: Rng): Pu
   const ground = elevationAt(hole, basket);
   const direction = normalize2(sub2(basket, lie));
   const distance = distance2(lie, basket);
-  const release = toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT);
-
-  // Aim point on the near side of the chains, at chain height.
-  const chainsPoint = toVec3(
-    sub2(basket, scale2(direction, basketDimensions.innerRingRadius * 0.6)),
-    ground + (basketDimensions.chainAttachHeight + basketDimensions.innerRingHeight) / 2,
-  );
-  const toChains: FlightLeg = {
-    from: release,
-    to: chainsPoint,
-    apex: 0.1 + distance * 0.04,
-    fade: 0,
-    until: 1,
-    pace: 'putt',
-  };
+  const toChains = puttAimLeg(hole, lie);
+  const { from: release, to: chainsPoint } = toChains;
 
   const check = (outcome: string): ThrowEvent => ({
     type: 'check',

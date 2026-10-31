@@ -1,17 +1,20 @@
-import type { Hole, Vec2 } from '@dgrpg/course-format';
+import { clampToHole, type Hole, type Vec2 } from '@dgrpg/course-format';
 import {
   type BasketZone,
+  basketZoneLeg,
   plannedPuttChance,
   plannedPuttReasons,
   resolvePlannedPutt,
 } from './basket-zones.ts';
 import type { Reason, ThrowEvent } from './events.ts';
+import type { FlightLeg } from './flight.ts';
 import { distance2 } from './geometry.ts';
 import { checkPlannedPutt, checkPlannedShot, type Refusal } from './planned.ts';
 import type { Player, ShotHeight, ThrowLine, ThrowType } from './player.ts';
-import { PUTT_RANGE, type PuttResolution, puttChance, puttReasons, resolvePutt } from './putt.ts';
+import { PUTT_RANGE, type PuttResolution, puttAimLeg, puttChance, puttReasons, resolvePutt } from './putt.ts';
 import { createRng, type Rng } from './rng.ts';
 import { resolveThrow, type ThrowStyle, throwChance, throwReasons } from './throw.ts';
+import { clearOfTrunks, flyThroughTrees } from './trees.ts';
 
 /** Plain, serialisable state for one player playing one hole. */
 export type RoundState = {
@@ -140,6 +143,37 @@ export const previewChance = (state: RoundState, action: Action): number | undef
   }
 };
 
+/**
+ * Putts fly through trees too. The trees are checked along the line the putt
+ * aims for before the putt is rolled: a branch or trunk in the way decides the
+ * putt on its own, and leaves it passes through are reported alongside it.
+ */
+const puttPastTrees = (
+  state: RoundState,
+  aim: FlightLeg,
+  resolve: (rng: Rng) => PuttResolution,
+): PuttResolution => {
+  const air = flyThroughTrees(state.hole, state.player, aim, state.rng);
+  if (air.interrupted) {
+    const lie = clearOfTrunks(state.hole, clampToHole(state.hole, air.end, 0));
+    return {
+      events: [
+        ...air.events,
+        { type: 'message', text: 'Never had a chance at the chains.' },
+        { type: 'lie', point: lie },
+      ],
+      holed: false,
+      lie,
+      rng: air.rng,
+    };
+  }
+  const putt = resolve(air.rng);
+  // Leaves it slipped through come right after the putt's own roll.
+  const notes = air.events.filter((event) => event.type !== 'move');
+  const [first, ...rest] = putt.events;
+  return { ...putt, events: first ? [first, ...notes, ...rest] : notes };
+};
+
 const afterPutt = (state: RoundState, putt: PuttResolution) => ({
   state: {
     ...state,
@@ -163,9 +197,17 @@ export const apply = (
 
   switch (plan.kind) {
     case 'putt':
-      return afterPutt(state, resolvePutt(hole, player, lie, rng));
+      return afterPutt(
+        state,
+        puttPastTrees(state, puttAimLeg(hole, lie), (next) => resolvePutt(hole, player, lie, next)),
+      );
     case 'planned-putt':
-      return afterPutt(state, resolvePlannedPutt(hole, player, lie, plan.zone, rng));
+      return afterPutt(
+        state,
+        puttPastTrees(state, basketZoneLeg(hole, lie, plan.zone), (next) =>
+          resolvePlannedPutt(hole, player, lie, plan.zone, next),
+        ),
+      );
     case 'throw': {
       const shot = resolveThrow(hole, player, lie, plan.target, rng, plan.style);
       return {

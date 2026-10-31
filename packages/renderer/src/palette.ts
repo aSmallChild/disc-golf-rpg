@@ -9,6 +9,9 @@ export const palette = {
   rough: 0x5b6e45,
   trunk: 0x5a4636,
   canopy: 0x4a5e3a,
+  /** Contact flecks: lighter than the tree so they read against it. */
+  bark: 0x8a6f55,
+  leaf: 0x6f8450,
   basket: 0x8a8f94,
   basketBand: 0xb8962e,
   chain: 0xa7abae,

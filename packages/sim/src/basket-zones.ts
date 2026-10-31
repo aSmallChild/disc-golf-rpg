@@ -113,6 +113,16 @@ export const basketZoneContact = (hole: Hole, lie: Vec2, zone: BasketZone): Vec3
   }
 };
 
+/** The flight a Big Brained Putt aims to fly: from the hand to the zone. */
+export const basketZoneLeg = (hole: Hole, lie: Vec2, zone: BasketZone): FlightLeg => ({
+  from: toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT),
+  to: basketZoneContact(hole, lie, zone),
+  apex: (zone === 'layup' ? 0.15 : 0.1) + distance2(lie, hole.basket) * 0.04,
+  fade: 0,
+  until: 1,
+  pace: 'putt',
+});
+
 /** Resolves a Big Brained Putt with dice. Every zone has its own outcomes. */
 export const resolvePlannedPutt = (
   hole: Hole,
@@ -134,16 +144,8 @@ export const resolvePlannedPutt = (
   const toward = normalize2(sub2(basket, lie));
   const right = rightOf(toward);
   const distance = distance2(lie, basket);
-  const release = toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT);
-  const contact = basketZoneContact(hole, lie, zone);
-  const toContact: FlightLeg = {
-    from: release,
-    to: contact,
-    apex: (zone === 'layup' ? 0.15 : 0.1) + distance * 0.04,
-    fade: 0,
-    until: 1,
-    pace: 'putt',
-  };
+  const toContact = basketZoneLeg(hole, lie, zone);
+  const contact = toContact.to;
   const inTray = toVec3(basket, ground + d.trayBottom + DISC_REST_HEIGHT * 2);
   const drop: FlightLeg = { from: contact, to: inTray, apex: 0, fade: 0, until: 1, pace: 'drop' };
 

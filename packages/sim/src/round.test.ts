@@ -10,6 +10,7 @@ import { releaseFor, throwReasons } from './throw.ts';
 const pro: Player = {
   name: 'Pro',
   skills: { driving: -3, putting: -3 },
+  luck: 0,
   maxRange: 150,
   plannedShots: ['putt', 'upshot', 'drive'],
   lines: ['straight', 'hyzer', 'anhyzer'],

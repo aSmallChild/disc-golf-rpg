@@ -14,7 +14,10 @@ Status markers: **[done]** code exists, **[todo]** not started.
   - **Trunk**: touching a trunk is always a hit (the release roll already decided the line). The roll decides good kick (keeps going, slightly off line), bad kick (sideways or back), or dead stop (drops at the base). The interrupted leg ends with the disc's edge exactly on the bark.
   - One roll per encounter, failures split by how badly they missed, up to 3 trees per throw. The tree you're standing under is ignored. Rolling discs stop against trunks. A disc never rests inside a trunk.
   - The roll breakdown lists every check and message in order.
-  - Putts don't check trees yet.
+  - Putts check trees along the line they aim for, before the putt is rolled. A trunk or a branch that stops it decides the putt; leaves it slips through are listed after the putt's roll.
+  - Luck (`Player.luck`, golf-scored, beginner +2) sways tree rolls: ×5 points on trunk kicks, ×3 on canopies. Provisional until stats are designed.
+  - Contact effects: the sim emits `contact` events; the renderer fires bark chips or a leaf burst plus a canopy sway as the disc reaches each point (`renderer/src/effects.ts`).
+  - The camera follows the disc by sliding with it, so the view angle no longer swings when following from the overview.
 - **[done] (2026-11-01) Low-ceiling Planned Shots** (`Player.shotHeights`): low apex to stay under branches, 75% range, −5 to the release, longer roll-out.
 - **[done] (2026-11-01) Tree shapes**: `canopy.shape` is `'cone'` (pine, the default) or `'round'` (broadleaf crown, an ellipsoid with a clear trunk under it). Optional field, so no format version bump. Test hole trees are now bigger (pines to 17 m, oaks 6.5 m crowns), and the disc's minimum on-screen size is smaller so it no longer looks oversized next to them.
 - **[done] (2026-11-01)** Planned Shots ("Big Brained Shot") for throws, first slice:

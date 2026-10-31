@@ -116,16 +116,24 @@ export const clearOfTrunks = (hole: Hole, point: Vec2): Vec2 =>
     return add2(tree.position, scale2(away, clearance));
   }, point);
 
+/** Luck is golf-scored: +2 (bad luck) costs `2 * step` points. */
+const luckReason = (player: Player, step: number): readonly Reason[] =>
+  player.luck === 0 ? [] : [{ source: `Luck (${golfScoreLabel(player.luck)})`, value: -player.luck * step }];
+
 export const canopyReasons = (player: Player, tree: Tree): readonly Reason[] => [
   {
     source: `Gaps in the leaves (${Math.round(tree.canopy.density * 100)}% dense)`,
     value: Math.round((1 - tree.canopy.density) * 100),
   },
   { source: `Driving skill (${golfScoreLabel(player.skills.driving)})`, value: -player.skills.driving * 4 },
+  ...luckReason(player, 3),
 ];
 
-/** A trunk always gets touched; the dice decide how the bark sends the disc back. */
-export const trunkReasons = (): readonly Reason[] => [{ source: 'Luck of the bounce', value: 30 }];
+/** A trunk always gets touched; the dice (and luck) decide how the bark sends the disc back. */
+export const trunkReasons = (player: Player): readonly Reason[] => [
+  { source: 'A kick off bark', value: 30 },
+  ...luckReason(player, 5),
+];
 
 export type TreeFlight = {
   /** The checks, messages, and moves that play the leg out, ending on the ground. */
@@ -183,7 +191,7 @@ export const flyThroughTrees = (
     }
 
     const { tree, part, point } = contact;
-    const reasons = part === 'canopy' ? canopyReasons(player, tree) : trunkReasons();
+    const reasons = part === 'canopy' ? canopyReasons(player, tree) : trunkReasons(player);
     const chance = chanceFrom(reasons, 5, 95);
     const [roll, r1] = rollD100(rng);
     const success = roll <= chance;
@@ -200,9 +208,17 @@ export const flyThroughTrees = (
       reasons,
     };
     const message: ThrowEvent = { type: 'message', text: outcome.text };
+    const touch: ThrowEvent = { type: 'contact', treeId: tree.id, part, point };
 
     if (part === 'canopy' && success) {
-      return fly(current, [...ignore, tree.id], encounters + 1, [...events, check, message], r1, interrupted);
+      return fly(
+        current,
+        [...ignore, tree.id],
+        encounters + 1,
+        [...events, touch, check, message],
+        r1,
+        interrupted,
+      );
     }
 
     const flown: FlightLeg = { ...current, until: contact.t * current.until, end: point };
@@ -248,7 +264,7 @@ export const flyThroughTrees = (
       next,
       [tree.id],
       encounters + 1,
-      [...events, { type: 'move', leg: flown }, check, message],
+      [...events, { type: 'move', leg: flown }, touch, check, message],
       r4,
       true,
     );

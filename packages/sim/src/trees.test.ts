@@ -8,6 +8,7 @@ import { type Player, tester } from './player.ts';
 import { type Action, apply, createRound, previewReasons } from './round.ts';
 import { flatHole } from './test-hole.ts';
 import { rangeFor } from './throw.ts';
+import { trunkReasons } from './trees.ts';
 
 const seeds = Array.from({ length: 200 }, (_, index) => index + 1);
 
@@ -154,6 +155,71 @@ describe('tree encounters', () => {
   it('is deterministic with trees', () => {
     const round = createRound(withTrees(wall), pro, 77);
     expect(apply(round, standard([30, 60]))).toEqual(apply(round, standard([30, 60])));
+  });
+});
+
+describe('putts and trees', () => {
+  const lie: Vec2 = [30, 26]; // 6 m short of the basket at [30, 20].
+  const at = (hole: Hole, seed: number) => ({ ...createRound(hole, pro, seed), lie });
+  const putts = (hole: Hole, action: Action) => seeds.map((seed) => apply(at(hole, seed), action));
+  const centre: Action = { type: 'planned-putt', zone: 'centre-chains' };
+  const standardPutt: Action = { type: 'standard-shot', target: [30, 20] };
+
+  it('never holes through a trunk in the way', () => {
+    const post = tree('post', [30, 23], { radius: 0.5, height: 5 }, noCanopy);
+    for (const action of [standardPutt, centre]) {
+      for (const { state, events } of putts(withTrees(post), action)) {
+        expect(state.status).toBe('playing');
+        expect(checksOf(events, 'Trunk')).toHaveLength(1);
+        expect(distance2(state.lie, post.position)).toBeGreaterThanOrEqual(
+          post.trunk.radius + DISC_RADIUS - 1e-9,
+        );
+      }
+    }
+  });
+
+  it('can still hole through sparse leaves, and reports them', () => {
+    const bush = tree(
+      'bush',
+      [30, 23],
+      { radius: 0.01, height: 0.05 },
+      { shape: 'round', radius: 2, base: 0.3, top: 4, density: 0 },
+    );
+    const results = putts(withTrees(bush), centre);
+    expect(results.every(({ events }) => checksOf(events, 'Canopy').length === 1)).toBe(true);
+    expect(results.some(({ state }) => state.status === 'holed')).toBe(true);
+  });
+
+  it("doesn't change putts when no tree is near the line", () => {
+    const far = tree('far', [55, 140], { radius: 0.5, height: 5 }, noCanopy);
+    const round = at(flatHole(), 9);
+    expect(apply({ ...round, hole: withTrees(far) }, centre).events).toEqual(apply(round, centre).events);
+  });
+});
+
+describe('luck and contact effects', () => {
+  it('lets luck sway the bark: bad luck is listed and lowers the kick chance', () => {
+    const unlucky = trunkReasons({ ...tester, luck: 2 });
+    const lucky = trunkReasons({ ...tester, luck: -2 });
+    expect(unlucky.map((reason) => reason.source)).toContain('Luck (Double bogey)');
+    const total = (reasons: readonly { readonly value: number }[]) =>
+      reasons.reduce((sum, r) => sum + r.value, 0);
+    expect(total(lucky)).toBeGreaterThan(total(unlucky));
+    expect(trunkReasons({ ...tester, luck: 0 }).map((reason) => reason.source)).not.toContain('Luck (Par)');
+  });
+
+  it('marks every tree contact for the renderer, at the contact point', () => {
+    const wall = tree('wall', [30, 110], { radius: 8, height: 40 }, noCanopy);
+    const hits = throwAt(withTrees(wall), pro, standard([30, 60])).filter(
+      ({ events }) => checksOf(events, 'Trunk').length > 0,
+    );
+    expect(hits.length).toBeGreaterThan(0);
+    for (const { events } of hits) {
+      const contact = events.find((event) => event.type === 'contact');
+      const interrupted = movesOf(events).find((leg) => leg.end !== undefined);
+      expect(contact?.type === 'contact' && contact.part).toBe('trunk');
+      expect(contact?.type === 'contact' && contact.point).toEqual(interrupted?.end);
+    }
   });
 });
 

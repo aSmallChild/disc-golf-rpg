@@ -1,5 +1,6 @@
 import { elevationAt, type Hole, type Vec2, type Vec3 } from '@dgrpg/course-format';
 import { DISC_REST_HEIGHT, type ThrowEvent } from '@dgrpg/sim';
+
 import {
   Color,
   Fog,
@@ -21,6 +22,7 @@ import { createAimGroup, createZoneMarker } from './aim.ts';
 import { createBasketGroup } from './basket.ts';
 import { type CameraView, type CameraViewName, cameraView } from './camera-views.ts';
 import { createDiscMesh, createTrail, keepDiscReadable } from './disc.ts';
+import { createEffects } from './effects.ts';
 import { createLights } from './lighting.ts';
 import { palette } from './palette.ts';
 import { positionAt, type Timeline, timeline } from './playback.ts';
@@ -28,6 +30,8 @@ import { createRegionLayer, type RegionDisplay } from './regions.ts';
 import { createTeePad } from './tee.ts';
 import { createTerrainMesh } from './terrain.ts';
 import { createTreeGroup } from './trees.ts';
+
+type TreeContact = Extract<ThrowEvent, { readonly type: 'contact' }>;
 
 export { CAMERA_TILT, type CameraViewName } from './camera-views.ts';
 export { palette } from './palette.ts';
@@ -66,6 +70,8 @@ const TRANSITION_SECONDS = 0.9;
 /** Pointer travel (px) below which a press counts as a click, not a camera drag. */
 const CLICK_TOLERANCE = 6;
 const FOLLOW_STRENGTH = 0.08;
+/** How close the disc gets to a contact point before its effect fires (m). More than one frame of travel. */
+const CONTACT_REACH = 1;
 /** Keyboard pan speed, in camera-to-target distances per second. */
 const PAN_SPEED = 0.9;
 
@@ -123,6 +129,11 @@ export const mountHoleView = (
   const regions = createRegionLayer(hole);
   scene.add(regions.group);
 
+  const effects = createEffects((treeId) =>
+    scene.getObjectByName(`tree:${treeId}`)?.getObjectByName('canopy'),
+  );
+  scene.add(effects.group);
+
   const disc = createDiscMesh();
   const trail = createTrail();
   trail.line.visible = false;
@@ -144,7 +155,9 @@ export const mountHoleView = (
 
   // The only mutable state lives here: camera transition, playback, aim.
   let transition: { from: CameraView; to: CameraView; startedAt: number } | undefined;
-  let playback: { plan: Timeline; startedAt: number; done: () => void } | undefined;
+  let playback:
+    | { plan: Timeline; startedAt: number; done: () => void; contacts: readonly TreeContact[] }
+    | undefined;
   let aim: Group | undefined;
   let zoneMarker: Mesh | undefined;
 
@@ -174,7 +187,16 @@ export const mountHoleView = (
     if (point) {
       disc.position.set(...point);
       trail.push(disc.position);
-      controls.target.lerp(disc.position, FOLLOW_STRENGTH);
+      // Follow by sliding the camera and its target together, so the view angle never swings.
+      const follow = disc.position.clone().sub(controls.target).multiplyScalar(FOLLOW_STRENGTH);
+      controls.target.add(follow);
+      camera.position.add(follow);
+      // Fire each tree contact's effect as the disc reaches it.
+      const [next, ...later] = playback.contacts;
+      if (next && disc.position.distanceTo(new Vector3(...next.point)) < CONTACT_REACH) {
+        effects.burst(next.treeId, next.part, next.point);
+        playback = { ...playback, contacts: later };
+      }
     }
     if (elapsed >= playback.plan.seconds) {
       const { done } = playback;
@@ -294,6 +316,7 @@ export const mountHoleView = (
     stepTransition(now);
     stepKeyboardPan(seconds);
     stepPlayback(now);
+    effects.step(seconds);
     controls.update();
     keepDiscReadable(disc, camera);
     renderer.render(scene, camera);
@@ -345,7 +368,8 @@ export const mountHoleView = (
         if (start) disc.position.set(...start);
         trail.reset(disc.position);
         trail.line.visible = true;
-        playback = { plan, startedAt: performance.now(), done: resolve };
+        const contacts = events.flatMap((event) => (event.type === 'contact' ? [event] : []));
+        playback = { plan, startedAt: performance.now(), done: resolve, contacts };
       }),
     dispose: () => {
       renderer.setAnimationLoop(null);
@@ -358,6 +382,7 @@ export const mountHoleView = (
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
+      effects.dispose();
       disposeObject(scene);
       renderer.dispose();
     },

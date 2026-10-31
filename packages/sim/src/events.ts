@@ -1,4 +1,4 @@
-import type { Vec2 } from '@dgrpg/course-format';
+import type { Vec2, Vec3 } from '@dgrpg/course-format';
 import type { FlightLeg } from './flight.ts';
 
 /** One modifier in a roll, for the feedback breakdown. Values are percentage points. */
@@ -23,6 +23,13 @@ export type ThrowEvent =
     }
   | { readonly type: 'move'; readonly leg: FlightLeg }
   | { readonly type: 'message'; readonly text: string }
+  /** The disc touches a tree here, for effects (bark chips, a leaf burst). The rolls are in the checks. */
+  | {
+      readonly type: 'contact';
+      readonly treeId: string;
+      readonly part: 'trunk' | 'canopy';
+      readonly point: Vec3;
+    }
   | { readonly type: 'out-of-bounds'; readonly replayFrom: Vec2 }
   | { readonly type: 'holed' }
   | { readonly type: 'lie'; readonly point: Vec2 };
