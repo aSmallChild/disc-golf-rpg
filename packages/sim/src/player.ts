@@ -7,6 +7,9 @@ export type ThrowLine = 'straight' | 'hyzer' | 'anhyzer';
 /** Players are right-handed for now, so these mean RHBH and RHFH. */
 export type ThrowType = 'backhand' | 'forehand';
 
+/** A low-ceiling shot stays under branches, at the cost of distance. */
+export type ShotHeight = 'normal' | 'low';
+
 /**
  * Placeholder character until stats and the skill tree exist.
  * Skills are golf scores: +2 (Double bogey) is bad, -2 (Eagle) is good.
@@ -25,6 +28,8 @@ export type Player = {
   readonly lines: readonly ThrowLine[];
   /** Which throw types a Planned Shot can use. Backhand is always there. */
   readonly throwTypes: readonly ThrowType[];
+  /** Which heights a Planned Shot can use. Normal is always there. */
+  readonly shotHeights: readonly ShotHeight[];
 };
 
 /** Clearly bad, but not hopeless (`ideas/skill-scoring.md`). Nothing planned is unlocked yet. */
@@ -35,6 +40,7 @@ export const beginner: Player = {
   plannedShots: [],
   lines: ['straight'],
   throwTypes: ['backhand'],
+  shotHeights: ['normal'],
 };
 
 /**
@@ -47,4 +53,5 @@ export const tester: Player = {
   plannedShots: ['putt', 'upshot', 'drive'],
   lines: ['straight', 'hyzer', 'anhyzer'],
   throwTypes: ['backhand', 'forehand'],
+  shotHeights: ['normal', 'low'],
 };

@@ -1,8 +1,9 @@
 import type { Reason } from './events.ts';
-import type { ThrowLine, ThrowType } from './player.ts';
+import type { ShotHeight, ThrowLine, ThrowType } from './player.ts';
 
 export const throwLines: readonly ThrowLine[] = ['hyzer', 'straight', 'anhyzer'];
 export const throwTypes: readonly ThrowType[] = ['backhand', 'forehand'];
+export const shotHeights: readonly ShotHeight[] = ['normal', 'low'];
 
 export const lineLabels: Record<ThrowLine, string> = {
   straight: 'Straight',
@@ -13,6 +14,11 @@ export const lineLabels: Record<ThrowLine, string> = {
 export const throwTypeLabels: Record<ThrowType, string> = {
   backhand: 'Backhand',
   forehand: 'Forehand',
+};
+
+export const shotHeightLabels: Record<ShotHeight, string> = {
+  normal: 'Normal height',
+  low: 'Low ceiling',
 };
 
 /**

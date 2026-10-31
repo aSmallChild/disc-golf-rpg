@@ -17,6 +17,9 @@ import {
   lineLabels,
   previewChance,
   previewReasons,
+  type ShotHeight,
+  shotHeightLabels,
+  shotHeights,
   shotKind,
   type ThrowEvent,
   type ThrowLine,
@@ -52,6 +55,7 @@ let round = $state.raw(createRound(hole, player, Date.now() >>> 0));
 let mode = $state<Mode>('standard');
 let line = $state<ThrowLine>('straight');
 let throwType = $state<ThrowType>('backhand');
+let height = $state<ShotHeight>('normal');
 /** Standard Shot target. */
 let target = $state.raw<Vec2 | undefined>(undefined);
 /** Planned Shot choice: a region and the clicked point inside it. */
@@ -67,6 +71,11 @@ const playing = $derived(round.status === 'playing' && !throwing);
 const planning = $derived(mode === 'planned' && kind === 'throw');
 const distanceTo = (point: Vec2) => Math.round(Math.hypot(point[0] - round.lie[0], point[1] - round.lie[1]));
 
+/** e.g. "Backhand hyzer, low ceiling". */
+const shapeLabel = $derived(
+  `${throwTypeLabels[throwType]} ${lineLabels[line].toLowerCase()}${height === 'low' ? ', low ceiling' : ''}`,
+);
+
 const puttAction = (choice: PuttChoice): Action =>
   choice === 'standard'
     ? { type: 'standard-shot', target: hole.basket }
@@ -77,6 +86,7 @@ const plannedAt = (regionId: string, point: Vec2, shape: ThrowLine = line): Acti
   target: point,
   line: shape,
   throwType,
+  height,
 });
 
 const action = $derived.by((): Action | undefined => {
@@ -117,8 +127,8 @@ const zonesCheck = $derived(checkAction(round, { type: 'planned-putt', zone: 'ce
 const puttShown = $derived(hoveredPutt ?? puttChoice);
 const puttLabel = (choice: PuttChoice) => (choice === 'standard' ? 'Standard putt' : basketZoneLabel(choice));
 
-const check = $derived(lastEvents.find((event) => event.type === 'check'));
-const messages = $derived(lastEvents.flatMap((event) => (event.type === 'message' ? [event.text] : [])));
+/** Every roll and message from the last shot, in the order they happened. */
+const story = $derived(lastEvents.filter((event) => event.type === 'check' || event.type === 'message'));
 const canThrow = $derived(playing && action !== undefined && chance !== undefined);
 const plannedName = $derived(
   planned && hole.regions.find((region) => region.id === planned?.regionId)?.label,
@@ -286,6 +296,18 @@ const playAgain = () => {
           </button>
         {/each}
       </div>
+      <div class="row" role="group" aria-label="Height">
+        {#each shotHeights as option (option)}
+          <button
+            type="button"
+            class:active={height === option}
+            disabled={option !== 'normal' && !player.shotHeights.includes(option)}
+            onclick={() => (height = option)}
+          >
+            {shotHeightLabels[option]}
+          </button>
+        {/each}
+      </div>
       <div class="row" role="group" aria-label="Line">
         {#each throwLines as shape (shape)}
           <button
@@ -306,7 +328,7 @@ const playAgain = () => {
       <p class="status">Click the ground to aim.</p>
     {:else if planned}
       <p class="status">
-        {throwTypeLabels[throwType]} {lineLabels[line].toLowerCase()} into {plannedName}, {distanceTo(planned.target)} m: clean release {chance}%
+        {shapeLabel} into {plannedName}, {distanceTo(planned.target)} m: clean release {chance}%
       </p>
       <button type="button" onclick={doThrow} disabled={!canThrow}>Throw</button>
     {:else}
@@ -317,7 +339,7 @@ const playAgain = () => {
 
 {#if hoverInfo}
   <div class="tooltip" style:left="{hoverInfo.screen.x + 18}px" style:top="{hoverInfo.screen.y + 18}px">
-    <h3>{hoverInfo.region.label} · {hoverInfo.distance} m · {throwTypeLabels[throwType]} {lineLabels[line].toLowerCase()}</h3>
+    <h3>{hoverInfo.region.label} · {hoverInfo.distance} m · {shapeLabel}</h3>
     {#if hoverInfo.why}
       <p class="bad">{hoverInfo.why}</p>
     {:else}
@@ -326,12 +348,15 @@ const playAgain = () => {
   </div>
 {/if}
 
-{#if check && check.type === 'check'}
+{#if story.length > 0}
   <aside class="breakdown" in:fade={{ duration: 200 }}>
-    <h2>{check.label}: {check.outcome}</h2>
-    <Reasons reasons={check.reasons} chance={check.chance} roll={check.roll} success={check.success} />
-    {#each messages as message (message)}
-      <p class="message">{message}</p>
+    {#each story as event, index (index)}
+      {#if event.type === 'check'}
+        <h2 class:later={index > 0}>{event.label}: {event.outcome}</h2>
+        <Reasons reasons={event.reasons} chance={event.chance} roll={event.roll} success={event.success} />
+      {:else if event.type === 'message'}
+        <p class="message">{event.text}</p>
+      {/if}
     {/each}
   </aside>
 {/if}
@@ -360,6 +385,8 @@ const playAgain = () => {
     right: 1rem;
     min-width: 16rem;
     max-width: 22rem;
+    max-height: calc(100% - 2rem);
+    overflow-y: auto;
   }
 
   h1 {
@@ -370,6 +397,12 @@ const playAgain = () => {
   h2 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
+  }
+
+  h2.later {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--ui-border);
   }
 
   h3 {

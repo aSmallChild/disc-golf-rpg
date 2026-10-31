@@ -21,7 +21,7 @@ export type FlightLeg = {
    * bent smoothly toward it so the disc visibly touches the contact point.
    */
   readonly end?: Vec3;
-  readonly pace: 'throw' | 'putt' | 'bounce' | 'drop';
+  readonly pace: 'throw' | 'putt' | 'glance' | 'bounce' | 'drop';
 };
 
 const basePoint = (leg: FlightLeg, u: number): Vec3 => {

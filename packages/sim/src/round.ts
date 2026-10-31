@@ -8,7 +8,7 @@ import {
 import type { Reason, ThrowEvent } from './events.ts';
 import { distance2 } from './geometry.ts';
 import { checkPlannedPutt, checkPlannedShot, type Refusal } from './planned.ts';
-import type { Player, ThrowLine, ThrowType } from './player.ts';
+import type { Player, ShotHeight, ThrowLine, ThrowType } from './player.ts';
 import { PUTT_RANGE, type PuttResolution, puttChance, puttReasons, resolvePutt } from './putt.ts';
 import { createRng, type Rng } from './rng.ts';
 import { resolveThrow, type ThrowStyle, throwChance, throwReasons } from './throw.ts';
@@ -26,7 +26,7 @@ export type RoundState = {
 /**
  * Actions are the same for humans and bots.
  * - Standard Shot: inside putt range it is a putt at the centre chains, so `target` is ignored there.
- * - Planned Shot: a point inside one of the hole's hand-drawn regions, with a chosen line and throw type.
+ * - Planned Shot: a point inside one of the hole's hand-drawn regions, with a chosen line, throw type, and height.
  * - Planned Putt: a basket zone, inside putt range.
  */
 export type Action =
@@ -37,6 +37,7 @@ export type Action =
       readonly target: Vec2;
       readonly line: ThrowLine;
       readonly throwType: ThrowType;
+      readonly height: ShotHeight;
     }
   | { readonly type: 'planned-putt'; readonly zone: BasketZone };
 
@@ -78,12 +79,19 @@ const planFor = (state: RoundState, action: Action): Plan | Refusal => {
         action.target,
         action.line,
         action.throwType,
+        action.height,
       );
       return check.allowed
         ? {
             kind: 'throw',
             target: action.target,
-            style: { kind: 'planned', region: check.region, line: action.line, throwType: action.throwType },
+            style: {
+              kind: 'planned',
+              region: check.region,
+              line: action.line,
+              throwType: action.throwType,
+              height: action.height,
+            },
           }
         : check;
     }

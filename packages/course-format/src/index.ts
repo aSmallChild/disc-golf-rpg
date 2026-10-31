@@ -37,6 +37,8 @@ export type Tree = {
   readonly position: Vec2;
   readonly trunk: { readonly radius: number; readonly height: number };
   readonly canopy: {
+    /** Cone (a pine) by default. Round is a broadleaf crown: an ellipsoid between base and top. */
+    readonly shape?: 'cone' | 'round';
     readonly radius: number;
     /** Height of the canopy bottom above the ground. */
     readonly base: number;
@@ -145,6 +147,33 @@ export const regionCentre = (region: Region): Vec2 => {
   const count = Math.max(region.polygon.length, 1);
   const [sx, sz] = region.polygon.reduce<Vec2>(([x, z], [px, pz]) => [x + px, z + pz], [0, 0]);
   return [sx / count, sz / count];
+};
+
+/** A trunk narrows to this fraction of its base radius at the top. */
+export const TRUNK_TOP_RATIO = 0.8;
+
+/**
+ * Trunk radius at `height` metres above the tree's ground, or undefined above the trunk.
+ * Shared by the simulation (contacts) and the renderer (the model), so a hit
+ * on screen is exactly where the simulation put it.
+ */
+export const trunkRadiusAt = (tree: Tree, height: number): number | undefined =>
+  height < 0 || height > tree.trunk.height
+    ? undefined
+    : tree.trunk.radius * (1 - (1 - TRUNK_TOP_RATIO) * (height / tree.trunk.height));
+
+/**
+ * Canopy radius at `height` metres above the tree's ground, or undefined outside it.
+ * A cone runs from `base` (full radius) to `top` (a point). A round crown is an
+ * ellipsoid, widest halfway between `base` and `top`.
+ */
+export const canopyRadiusAt = (tree: Tree, height: number): number | undefined => {
+  const { base, top, radius, shape = 'cone' } = tree.canopy;
+  if (height < base || height > top) return undefined;
+  if (shape === 'cone') return (radius * (top - height)) / (top - base);
+  const half = (top - base) / 2;
+  const offset = (height - (base + half)) / half;
+  return radius * Math.sqrt(Math.max(0, 1 - offset * offset));
 };
 
 /** Keeps a point inside the playable area, with a margin. */

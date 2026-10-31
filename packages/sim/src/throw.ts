@@ -6,9 +6,10 @@ import {
   type Region,
   type Vec2,
 } from '@dgrpg/course-format';
+import { DISC_REST_HEIGHT, RELEASE_HEIGHT } from './disc.ts';
 import { chanceFrom, type Reason, type ThrowEvent } from './events.ts';
-import type { FlightLeg } from './flight.ts';
-import { add2, clamp, distance2, normalize2, rightOf, scale2, sub2, toVec3 } from './geometry.ts';
+import { type FlightLeg, flightPoint } from './flight.ts';
+import { add2, clamp, distance2, normalize2, rightOf, scale2, sub2, toVec2, toVec3 } from './geometry.ts';
 import {
   BAD_RELEASE_CURVE,
   curveDirection,
@@ -17,20 +18,16 @@ import {
   lineReasons,
   throwTypeLabels,
 } from './lines.ts';
-import type { Player, ThrowLine, ThrowType } from './player.ts';
+import type { Player, ShotHeight, ThrowLine, ThrowType } from './player.ts';
 import { nextGaussian, nextRange, nextSign, type Rng, rollD100 } from './rng.ts';
 import { golfScoreLabel } from './scoring.ts';
-
-/** Height of the disc at release, above the ground. */
-export const RELEASE_HEIGHT = 1.1;
-/** Resting height of a disc on the ground (half its thickness). */
-export const DISC_REST_HEIGHT = 0.012;
+import { clearOfTrunks, findContact, flyThroughTrees } from './trees.ts';
 
 const SKILL_STEP = 8;
 
 export type Release = 'clean' | 'wobbly' | 'shank';
 
-/** How the throw was chosen. A Planned Shot names its region, line, and throw type. */
+/** How the throw was chosen. A Planned Shot names its region, line, throw type, and height. */
 export type ThrowStyle =
   | { readonly kind: 'standard' }
   | {
@@ -38,12 +35,15 @@ export type ThrowStyle =
       readonly region: Region;
       readonly line: ThrowLine;
       readonly throwType: ThrowType;
+      readonly height: ShotHeight;
     };
 
 const standard: ThrowStyle = { kind: 'standard' };
 
 /** A Planned Shot's scatter is this fraction of a Standard Shot's. */
 const PLANNED_SCATTER = 0.6;
+/** Keeping a disc low costs distance. */
+const LOW_CEILING_RANGE = 0.75;
 
 export type ThrowResolution = {
   readonly events: readonly ThrowEvent[];
@@ -58,6 +58,12 @@ const releaseLabels: Record<Release, string> = {
   shank: 'Shanked it',
 };
 
+const isLow = (style: ThrowStyle): boolean => style.kind === 'planned' && style.height === 'low';
+
+/** Longest throw for this style, in metres. */
+export const rangeFor = (player: Player, style: ThrowStyle = standard): number =>
+  isLow(style) ? Math.round(player.maxRange * LOW_CEILING_RANGE) : player.maxRange;
+
 /** The modifiers for a throw. Pure, so the UI preview and the throw always agree. */
 export const throwReasons = (
   player: Player,
@@ -65,8 +71,9 @@ export const throwReasons = (
   target: Vec2,
   style: ThrowStyle = standard,
 ): readonly Reason[] => {
+  const range = rangeFor(player, style);
   const requested = distance2(lie, target);
-  const distance = Math.min(requested, player.maxRange);
+  const distance = Math.min(requested, range);
   return [
     style.kind === 'planned'
       ? { source: 'Big Brained Shot (planned the line)', value: 80 }
@@ -76,11 +83,12 @@ export const throwReasons = (
       value: -player.skills.driving * SKILL_STEP,
     },
     {
-      source: `Distance ${Math.round(distance)} m of ${player.maxRange} m range`,
-      value: -Math.round((distance / player.maxRange) * 20),
+      source: `Distance ${Math.round(distance)} m of ${range} m range`,
+      value: -Math.round((distance / range) * 20),
     },
-    ...(requested > player.maxRange ? [{ source: 'Aimed beyond your range', value: -10 }] : []),
+    ...(requested > range ? [{ source: 'Aimed beyond your range', value: -10 }] : []),
     ...(style.kind === 'planned' ? lineReasons[style.line] : []),
+    ...(isLow(style) ? [{ source: 'Low ceiling (hard to keep down)', value: -5 }] : []),
   ];
 };
 
@@ -126,15 +134,28 @@ const fadeFor = (style: ThrowStyle, rng: Rng): readonly [fade: number, rng: Rng]
   return [lineBulge(style.line, style.throwType) * k, r1];
 };
 
+/** Height of the arc above the straight release-to-landing line, in metres. */
+const apexFor = (style: ThrowStyle, release: Release, flown: number): number => {
+  if (isLow(style)) return release === 'shank' ? 0.4 : 0.6 + flown * 0.008;
+  return 2 + flown * (release === 'shank' ? 0.05 : 0.12);
+};
+
 const shankMessages = [
   'It barely left the tee box.',
   'That one is going to haunt you.',
   'A scream of a release, in the wrong direction.',
 ] as const;
 
+const releaseLabel = (style: ThrowStyle): string => {
+  if (style.kind === 'standard') return 'Release';
+  const low = style.height === 'low' ? ' low-ceiling' : '';
+  return `${throwTypeLabels[style.throwType]} ${lineLabels[style.line].toLowerCase()}${low} release into ${style.region.label}`;
+};
+
 /**
  * Resolves a Standard or Planned Shot from `lie` toward `target` with dice.
- * The flight legs describe exactly what the renderer will show.
+ * The flight legs describe exactly what the renderer will show, including
+ * every tree the disc touches on the way.
  */
 export const resolveThrow = (
   hole: Hole,
@@ -150,7 +171,7 @@ export const resolveThrow = (
   const release = releaseFor(roll, chance);
 
   const direction = normalize2(sub2(target, lie));
-  const distance = Math.min(distance2(lie, target), player.maxRange);
+  const distance = Math.min(distance2(lie, target), rangeFor(player, style));
   const [rawAlong, rawAcross, r2] = scatterFor(release, r1);
   // Planning narrows the spread, but a shank still falls short.
   const tighten = style.kind === 'planned' ? PLANNED_SCATTER : 1;
@@ -168,7 +189,7 @@ export const resolveThrow = (
   const flight: FlightLeg = {
     from: toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT),
     to: toVec3(landing, elevationAt(hole, landing) + DISC_REST_HEIGHT),
-    apex: 2 + flown * (release === 'shank' ? 0.05 : 0.12),
+    apex: apexFor(style, release, flown),
     fade: fade * flown,
     until: 1,
     pace: 'throw',
@@ -177,10 +198,7 @@ export const resolveThrow = (
   const [shankPick, r5] = nextRange(r4, 0, shankMessages.length);
   const check: ThrowEvent = {
     type: 'check',
-    label:
-      style.kind === 'planned'
-        ? `${throwTypeLabels[style.throwType]} ${lineLabels[style.line].toLowerCase()} release into ${style.region.label}`
-        : 'Release',
+    label: releaseLabel(style),
     chance,
     roll,
     outcome: releaseLabels[release],
@@ -192,55 +210,71 @@ export const resolveThrow = (
       ? [{ type: 'message', text: shankMessages[Math.floor(shankPick)] ?? shankMessages[0] }]
       : [];
 
-  if (!inBounds(hole, landing)) {
-    return {
-      events: [
-        check,
-        ...messages,
-        { type: 'move', leg: flight },
-        { type: 'message', text: 'Out of bounds. Penalty stroke, replay from your last lie.' },
-        { type: 'out-of-bounds', replayFrom: lie },
-      ],
-      lie: undefined,
-      rng: r5,
-    };
-  }
-
-  // Roll out after landing: longer downhill, shorter uphill.
-  const ahead = add2(landing, scale2(direction, 3));
-  const slope = (elevationAt(hole, landing) - elevationAt(hole, ahead)) / 3;
-  const [baseRoll, r6] = nextRange(r5, 1, 6);
-  const rollDistance = clamp(baseRoll + slope * 25, 0, 20);
-  const rawEnd = add2(landing, scale2(direction, rollDistance));
-  const rollEnd: Vec2 = inBounds(hole, rawEnd) ? rawEnd : landing;
-  const rollLeg: FlightLeg = {
-    from: flight.to,
-    to: toVec3(rollEnd, elevationAt(hole, rollEnd) + DISC_REST_HEIGHT),
-    apex: 0.15,
-    fade: 0,
-    until: 1,
-    pace: 'bounce',
-  };
-
-  const regionResult: readonly ThrowEvent[] =
+  const air = flyThroughTrees(hole, player, flight, r5);
+  const regionResult = (end: Vec2): readonly ThrowEvent[] =>
     style.kind === 'planned'
       ? [
           {
             type: 'message',
-            text: pointInPolygon(rollEnd, style.region.polygon)
+            text: pointInPolygon(end, style.region.polygon)
               ? `Landed in ${style.region.label}. Big brain.`
               : `Missed ${style.region.label}. So much for the plan.`,
           },
         ]
       : [];
 
+  if (!inBounds(hole, air.end)) {
+    return {
+      events: [
+        check,
+        ...messages,
+        ...air.events,
+        { type: 'message', text: 'Out of bounds. Penalty stroke, replay from your last lie.' },
+        { type: 'out-of-bounds', replayFrom: lie },
+      ],
+      lie: undefined,
+      rng: air.rng,
+    };
+  }
+
+  // A tree already decided where it ends up: no roll-out after a kick or a drop.
+  if (air.interrupted) {
+    const end = clearOfTrunks(hole, air.end);
+    return {
+      events: [check, ...messages, ...air.events, ...regionResult(end), { type: 'lie', point: end }],
+      lie: end,
+      rng: air.rng,
+    };
+  }
+
+  // Roll out after landing: longer downhill, shorter uphill, and further for a low skimmer.
+  const ahead = add2(landing, scale2(direction, 3));
+  const slope = (elevationAt(hole, landing) - elevationAt(hole, ahead)) / 3;
+  const [baseRoll, r6] = isLow(style) ? nextRange(air.rng, 3, 10) : nextRange(air.rng, 1, 6);
+  const rollDistance = clamp(baseRoll + slope * 25, 0, 20);
+  const rawEnd = add2(landing, scale2(direction, rollDistance));
+  const plannedEnd: Vec2 = inBounds(hole, rawEnd) ? rawEnd : landing;
+  const rolling: FlightLeg = {
+    from: flight.to,
+    to: toVec3(plannedEnd, elevationAt(hole, plannedEnd) + DISC_REST_HEIGHT),
+    apex: 0.15,
+    fade: 0,
+    until: 1,
+    pace: 'bounce',
+  };
+  // A rolling disc stops against any trunk in its way. Leaves are too high to matter.
+  const stopper = rollDistance > 0.3 ? findContact(hole, rolling, [], ['trunk']) : undefined;
+  const rollLeg: FlightLeg = stopper ? { ...rolling, until: stopper.t, end: stopper.point } : rolling;
+  const rollEnd = clearOfTrunks(hole, toVec2(flightPoint(rollLeg, 1)));
+
   return {
     events: [
       check,
       ...messages,
-      { type: 'move', leg: flight },
+      ...air.events,
       ...(rollDistance > 0.3 ? [{ type: 'move', leg: rollLeg } as const] : []),
-      ...regionResult,
+      ...(stopper ? [{ type: 'message', text: 'Rolled up against a trunk.' } as const] : []),
+      ...regionResult(rollEnd),
       { type: 'lie', point: rollEnd },
     ],
     lie: rollEnd,

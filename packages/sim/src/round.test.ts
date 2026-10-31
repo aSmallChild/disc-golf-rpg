@@ -14,6 +14,7 @@ const pro: Player = {
   plannedShots: ['putt', 'upshot', 'drive'],
   lines: ['straight', 'hyzer', 'anhyzer'],
   throwTypes: ['backhand', 'forehand'],
+  shotHeights: ['normal', 'low'],
 };
 
 const checkOf = (events: readonly ThrowEvent[]) => events.find((event) => event.type === 'check');

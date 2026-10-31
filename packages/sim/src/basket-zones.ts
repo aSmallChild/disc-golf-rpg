@@ -1,4 +1,5 @@
 import { basketDimensions as d, elevationAt, type Hole, type Vec2, type Vec3 } from '@dgrpg/course-format';
+import { DISC_REST_HEIGHT, RELEASE_HEIGHT } from './disc.ts';
 import { chanceFrom, type Reason, type ThrowEvent } from './events.ts';
 import type { FlightLeg } from './flight.ts';
 import { add2, distance2, normalize2, rightOf, scale2, sub2, toVec3 } from './geometry.ts';
@@ -6,7 +7,6 @@ import type { Player } from './player.ts';
 import type { PuttResolution } from './putt.ts';
 import { nextGaussian, nextRange, type Rng, rollD100 } from './rng.ts';
 import { golfScoreLabel } from './scoring.ts';
-import { DISC_REST_HEIGHT, RELEASE_HEIGHT } from './throw.ts';
 
 /** Where a Big Brained Putt is aimed on (or under) the basket. */
 export type BasketZone = 'centre-chains' | 'left-chains' | 'right-chains' | 'band' | 'pole' | 'layup';

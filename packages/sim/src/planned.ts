@@ -1,7 +1,7 @@
 import { type Hole, pointInPolygon, type Region, type Vec2 } from '@dgrpg/course-format';
 import { distance2 } from './geometry.ts';
 import { lineLabels, throwTypeLabels } from './lines.ts';
-import type { PlannedShotKind, Player, ThrowLine, ThrowType } from './player.ts';
+import type { PlannedShotKind, Player, ShotHeight, ThrowLine, ThrowType } from './player.ts';
 import { PUTT_RANGE, TAP_IN_RANGE } from './putt.ts';
 
 /** Throws up to this length count as upshots; longer ones are drives. */
@@ -34,7 +34,7 @@ const lockedKind = (kind: PlannedShotKind): Refusal => {
 };
 
 /**
- * Whether a Planned Shot at `target` inside region `regionId`, on `line` with `throwType`, is possible.
+ * Whether a Planned Shot at `target` inside region `regionId`, on `line` with `throwType` at `height`, is possible.
  * The UI uses this to explain locked regions, and `apply` uses it to reject bad actions.
  */
 export const checkPlannedShot = (
@@ -45,6 +45,7 @@ export const checkPlannedShot = (
   target: Vec2,
   line: ThrowLine,
   throwType: ThrowType,
+  height: ShotHeight = 'normal',
 ): PlannedShotCheck => {
   const region = hole.regions.find((candidate) => candidate.id === regionId);
   if (!region) return { allowed: false, why: 'There is no such region on this hole.' };
@@ -59,6 +60,9 @@ export const checkPlannedShot = (
   }
   if (throwType !== 'backhand' && !player.throwTypes.includes(throwType)) {
     return { allowed: false, why: `You can't throw ${throwTypeLabels[throwType].toLowerCase()} yet.` };
+  }
+  if (height !== 'normal' && !player.shotHeights.includes(height)) {
+    return { allowed: false, why: "You can't keep a disc under a low ceiling yet." };
   }
   return { allowed: true, region, kind };
 };

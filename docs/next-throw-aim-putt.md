@@ -9,7 +9,14 @@ Status markers: **[done]** code exists, **[todo]** not started.
 - **[done]** `apply(state, action) -> { state, events }` in `sim/src/round.ts`, with 23 unit tests on fixed seeds.
 - **[done]** Disc mesh (grows with camera distance so it stays visible), trail, flight playback following the sim's curve, camera follows the disc then settles behind the new lie.
 - **[done]** Roll breakdown panel: every reason, chance, roll, outcome, flavour text. Hole result in golf terms.
-- **[todo] Tree encounters.** Discs currently fly straight through trees. This is the next step.
+- **[done] (2026-11-01) Tree encounters** (`sim/src/trees.ts`). The flight curve is sampled every 0.2 m against each tree's trunk and canopy, using the shared shape helpers `trunkRadiusAt` / `canopyRadiusAt` in `course-format` that the renderer's models also use.
+  - **Canopy**: pass through (chance = gaps in the leaves, minus driving skill), else deflected (glances off line) or swallowed (drops under the tree). The disc is 0.4 m into the leaves when it reacts.
+  - **Trunk**: touching a trunk is always a hit (the release roll already decided the line). The roll decides good kick (keeps going, slightly off line), bad kick (sideways or back), or dead stop (drops at the base). The interrupted leg ends with the disc's edge exactly on the bark.
+  - One roll per encounter, failures split by how badly they missed, up to 3 trees per throw. The tree you're standing under is ignored. Rolling discs stop against trunks. A disc never rests inside a trunk.
+  - The roll breakdown lists every check and message in order.
+  - Putts don't check trees yet.
+- **[done] (2026-11-01) Low-ceiling Planned Shots** (`Player.shotHeights`): low apex to stay under branches, 75% range, −5 to the release, longer roll-out.
+- **[done] (2026-11-01) Tree shapes**: `canopy.shape` is `'cone'` (pine, the default) or `'round'` (broadleaf crown, an ellipsoid with a clear trunk under it). Optional field, so no format version bump. Test hole trees are now bigger (pines to 17 m, oaks 6.5 m crowns), and the disc's minimum on-screen size is smaller so it no longer looks oversized next to them.
 - **[done] (2026-11-01)** Planned Shots ("Big Brained Shot") for throws, first slice:
   - `Action` gains `{ type: 'planned-shot', regionId, target }`. `checkPlannedShot` (`sim/src/planned.ts`) rejects unknown regions, targets outside the region, putt range, and locked kinds, and says why.
   - Upshot (≤ 80 m) vs drive (> 80 m) by throw length. `Player.plannedShots` lists unlocks. The beginner has none (user decision); the `tester` profile has everything and is what the game uses for now.

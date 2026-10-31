@@ -18,18 +18,31 @@ const hill = (column: number, row: number): number => {
   return 6 * Math.exp(-(dx * dx + dz * dz) / 120);
 };
 
+/** Tall, narrow conifer: branches almost to the ground, so there's no getting under it. */
+const pine = (id: string, position: Vec2): Tree => ({
+  id,
+  position,
+  trunk: { radius: 0.3, height: 6 },
+  canopy: { shape: 'cone', radius: 3.5, base: 1.5, top: 17, density: 0.75 },
+});
+
+/** Broad, open crown with a clear trunk under it: a low-ceiling shot can sneak beneath. */
+const oak = (id: string, position: Vec2): Tree => ({
+  id,
+  position,
+  trunk: { radius: 0.45, height: 6 },
+  canopy: { shape: 'round', radius: 6.5, base: 3.2, top: 13, density: 0.5 },
+});
+
 const trees: readonly Tree[] = [
-  [30, 70],
-  [46, 92],
-  [22, 110],
-  [54, 54],
-  [18, 40],
-].map(([x, z], index) => ({
-  id: `t${index}`,
-  position: [x ?? 0, z ?? 0] as const,
-  trunk: { radius: 0.35, height: 4 },
-  canopy: { radius: 3, base: 2.5, top: 10, density: 0.6 },
-}));
+  pine('pine-1', [30, 70]),
+  oak('oak-1', [46, 92]),
+  pine('pine-2', [22, 110]),
+  oak('oak-2', [54, 54]),
+  pine('pine-3', [18, 40]),
+  oak('oak-3', [32, 132]),
+  pine('pine-4', [62, 128]),
+];
 
 /** Hand-drawn rings are octagons: enough to read as round, still easy to edit by hand. */
 const octagon = ([cx, cz]: Vec2, radius: number): readonly Vec2[] =>

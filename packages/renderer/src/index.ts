@@ -113,7 +113,7 @@ export const mountHoleView = (
 
   const terrain = createTerrainMesh(hole.elevation);
   scene.add(terrain);
-  scene.add(...hole.trees.map((tree) => createTreeGroup(tree, hole.elevation)));
+  scene.add(...hole.trees.map((tree) => createTreeGroup(tree, hole)));
 
   const basket = createBasketGroup();
   basket.position.set(hole.basket[0], elevationAt(hole, hole.basket), hole.basket[1]);

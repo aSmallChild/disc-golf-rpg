@@ -4,6 +4,7 @@ import { type FlightLeg, flightPoint, legLength, type ThrowEvent } from '@dgrpg/
 const speeds: Record<FlightLeg['pace'], number> = {
   throw: 26,
   putt: 7,
+  glance: 12,
   bounce: 5,
   drop: 2.5,
 };
@@ -42,6 +43,7 @@ const easeFor = (pace: FlightLeg['pace']) => (t: number) => {
       return 1 - (1 - t) ** 1.6; // Fast off the hand, slowing as it glides.
     case 'putt':
       return 1 - (1 - t) ** 1.3;
+    case 'glance':
     case 'bounce':
       return 1 - (1 - t) ** 2; // Skids to a stop.
     case 'drop':

@@ -4,7 +4,7 @@ import type { ThrowEvent } from './events.ts';
 import { distance2 } from './geometry.ts';
 import { curveDirection } from './lines.ts';
 import { checkPlannedShot, plannedKindFor } from './planned.ts';
-import { beginner, type Player, type ThrowLine, type ThrowType, tester } from './player.ts';
+import { beginner, type Player, type ShotHeight, type ThrowLine, type ThrowType, tester } from './player.ts';
 import { type Action, apply, createRound, previewChance, previewReasons, type RoundState } from './round.ts';
 import { flatHole } from './test-hole.ts';
 
@@ -17,12 +17,14 @@ const planned = (
   target: Vec2,
   line: ThrowLine = 'straight',
   throwType: ThrowType = 'backhand',
+  height: ShotHeight = 'normal',
 ): Action => ({
   type: 'planned-shot',
   regionId,
   target,
   line,
   throwType,
+  height,
 });
 const standard = (target: Vec2): Action => ({ type: 'standard-shot', target });
 const messagesOf = (events: readonly ThrowEvent[]) =>
@@ -170,6 +172,7 @@ describe('planned shots', () => {
         target: nearTarget,
         line: 'straight',
         throwType: 'backhand',
+        height: 'normal',
       }),
     ).toBeLessThan(meanMiss(tester, { type: 'standard-shot', target: nearTarget }));
   });

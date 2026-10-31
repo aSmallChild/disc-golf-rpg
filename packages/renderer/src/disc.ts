@@ -1,3 +1,4 @@
+import { DISC_RADIUS } from '@dgrpg/sim';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -11,15 +12,15 @@ import {
 } from 'three';
 import { palette } from './palette.ts';
 
-const DISC_RADIUS = 0.105;
 const DISC_THICKNESS = 0.024;
 const TRAIL_POINTS = 48;
 
 /**
  * Real discs are 21 cm wide, invisible from across a hole. The disc is
  * drawn at least this many radians wide on screen so it stays readable.
+ * Kept small so it never looks big next to a tree; the trail does the rest.
  */
-const MIN_ANGULAR_SIZE = 0.012;
+const MIN_ANGULAR_SIZE = 0.0045;
 
 export const createDiscMesh = (): Mesh => {
   const disc = new Mesh(

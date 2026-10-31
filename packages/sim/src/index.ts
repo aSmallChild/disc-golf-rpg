@@ -1,4 +1,5 @@
 export * from './basket-zones.ts';
+export * from './disc.ts';
 export * from './events.ts';
 export * from './flight.ts';
 export * from './lines.ts';
