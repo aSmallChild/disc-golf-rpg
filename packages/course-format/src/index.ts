@@ -9,6 +9,7 @@ export const COURSE_FORMAT_VERSION = 1;
 
 /** Metres. x/z are ground plane, y is up (matches Three.js). */
 export type Vec2 = readonly [x: number, z: number];
+export type Vec3 = readonly [x: number, y: number, z: number];
 
 export type Surface =
   | 'fairway'
@@ -46,6 +47,7 @@ export type Tree = {
   };
 };
 
+/** A hand-drawn, selectable aim region (VATS-style). */
 export type Region = {
   readonly id: string;
   readonly label: string;
@@ -61,6 +63,7 @@ export type Hole = {
   readonly elevation: Grid<number>;
   readonly surface: Grid<Surface>;
   readonly trees: readonly Tree[];
+  /** Checked in order: the first region containing a point wins. */
   readonly regions: readonly Region[];
 };
 
@@ -71,12 +74,74 @@ export type Course = {
   readonly holes: readonly Hole[];
 };
 
+/**
+ * Approximate dimensions of a standard target, in metres above the ground.
+ * Shared by the simulation (contact points) and the renderer (the model).
+ */
+export const basketDimensions = {
+  poleRadius: 0.025,
+  poleHeight: 1.5,
+  trayBottom: 0.6,
+  trayTop: 0.82,
+  trayRadiusTop: 0.33,
+  trayRadiusBottom: 0.27,
+  bandHeight: 1.38,
+  bandRadius: 0.3,
+  innerRingHeight: 1.34,
+  innerRingRadius: 0.16,
+  /** Where the chains meet the pole, just above the tray. */
+  chainAttachHeight: 0.88,
+  chainAttachRadius: 0.04,
+  outerChainCount: 18,
+  innerChainCount: 10,
+  trayBarCount: 24,
+} as const;
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
 /** Nearest-sample lookup, clamped to the grid edge. */
 export const sampleGrid = <T>(grid: Grid<T>, [x, z]: Vec2): T => {
-  const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
-  const column = clamp(Math.round(x / grid.cellSize), grid.columns - 1);
-  const row = clamp(Math.round(z / grid.cellSize), grid.rows - 1);
+  const column = clamp(Math.round(x / grid.cellSize), 0, grid.columns - 1);
+  const row = clamp(Math.round(z / grid.cellSize), 0, grid.rows - 1);
   const value = grid.values[row * grid.columns + column];
   if (value === undefined) throw new Error('Grid has fewer values than columns * rows');
   return value;
+};
+
+/** Size of the hole's playable area in metres. */
+export const holeSize = (hole: Hole): Vec2 => [
+  (hole.elevation.columns - 1) * hole.elevation.cellSize,
+  (hole.elevation.rows - 1) * hole.elevation.cellSize,
+];
+
+/** Bilinear ground height, so objects sit on the terrain mesh rather than on grid steps. */
+export const elevationAt = (hole: Hole, [x, z]: Vec2): number => {
+  const { columns, rows, cellSize, values } = hole.elevation;
+  const gx = clamp(x / cellSize, 0, columns - 1);
+  const gz = clamp(z / cellSize, 0, rows - 1);
+  const c0 = Math.min(Math.floor(gx), columns - 2);
+  const r0 = Math.min(Math.floor(gz), rows - 2);
+  const fx = gx - c0;
+  const fz = gz - r0;
+  const at = (column: number, row: number) => values[row * columns + column] ?? 0;
+  const top = at(c0, r0) * (1 - fx) + at(c0 + 1, r0) * fx;
+  const bottom = at(c0, r0 + 1) * (1 - fx) + at(c0 + 1, r0 + 1) * fx;
+  return top * (1 - fz) + bottom * fz;
+};
+
+/** Even-odd ray casting test. */
+export const pointInPolygon = ([x, z]: Vec2, polygon: readonly Vec2[]): boolean =>
+  polygon.reduce((inside, [xi, zi], index) => {
+    const [xj, zj] = polygon[(index + polygon.length - 1) % polygon.length] ?? [xi, zi];
+    const crosses = zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi;
+    return crosses ? !inside : inside;
+  }, false);
+
+export const regionAt = (hole: Hole, point: Vec2): Region | undefined =>
+  hole.regions.find((region) => pointInPolygon(point, region.polygon));
+
+/** Keeps a point inside the playable area, with a margin. */
+export const clampToHole = (hole: Hole, [x, z]: Vec2, margin = 1): Vec2 => {
+  const [width, depth] = holeSize(hole);
+  return [clamp(x, margin, width - margin), clamp(z, margin, depth - margin)];
 };

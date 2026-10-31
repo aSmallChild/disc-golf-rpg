@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { CameraViewName } from '@dgrpg/renderer';
 import { createRng, rollD100 } from '@dgrpg/sim';
 import { fade } from 'svelte/transition';
 import GameCanvas from './GameCanvas.svelte';
@@ -6,6 +7,13 @@ import { testCourse } from './test-hole.ts';
 
 const hole = testCourse.holes[0];
 
+const views: readonly { readonly name: CameraViewName; readonly label: string }[] = [
+  { name: 'overview', label: 'Overview' },
+  { name: 'tee', label: 'Tee' },
+  { name: 'basket', label: 'Basket' },
+];
+
+let cameraView = $state<CameraViewName>('overview');
 let rng = $state.raw(createRng(Date.now()));
 let lastRoll = $state<number | undefined>(undefined);
 
@@ -17,12 +25,22 @@ const roll = () => {
 </script>
 
 {#if hole}
-  <GameCanvas {hole} />
+  <GameCanvas {hole} {cameraView} />
 {/if}
 
 <aside class="panel">
   <h1>{testCourse.name}</h1>
   <p>Hole {hole?.id} · Par {hole?.par}</p>
+
+  <div class="views" role="group" aria-label="Camera view">
+    {#each views as view (view.name)}
+      <button type="button" aria-pressed={cameraView === view.name} onclick={() => (cameraView = view.name)}>
+        {view.label}
+      </button>
+    {/each}
+  </div>
+  <p class="hint">Drag to orbit · right-drag to pan · scroll to zoom</p>
+
   <button type="button" onclick={roll}>Roll d100</button>
   {#key lastRoll}
     {#if lastRoll !== undefined}
@@ -53,8 +71,18 @@ const roll = () => {
     color: var(--ui-muted);
   }
 
+  .hint {
+    font-size: 0.8rem;
+  }
+
   .roll {
     color: var(--ui-text);
+  }
+
+  .views {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
   }
 
   button {
@@ -65,5 +93,13 @@ const roll = () => {
     border: 1px solid var(--ui-border);
     padding: 0.25rem 0.75rem;
     cursor: pointer;
+  }
+
+  .views button {
+    margin-top: 0;
+  }
+
+  button[aria-pressed='true'] {
+    background: var(--ui-border);
   }
 </style>

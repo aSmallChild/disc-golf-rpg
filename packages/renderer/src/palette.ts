@@ -10,6 +10,8 @@ export const palette = {
   trunk: 0x5a4636,
   canopy: 0x4a5e3a,
   basket: 0x8a8f94,
+  basketBand: 0xb8962e,
+  chain: 0xa7abae,
   tee: 0x9b9184,
   sun: 0xfff3e0,
   ambientSky: 0xdfe6ea,
