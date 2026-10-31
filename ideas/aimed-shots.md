@@ -19,6 +19,7 @@ Each choice shows a success chance computed from stats, skills, gear, and condit
 - A **Planned Shot uses more action points than a Standard Shot** (see `shot-clock.md`).
 - A Planned Shot **needs to be unlocked**, or relies on a level of skill.
 - It might be unlocked separately by skills for **putts, upshots, and drives**, told apart by distance.
+- **The beginner starts with no Planned Shots unlocked.** For play-testing, a testing profile has every Planned Shot and line unlocked until the skill tree exists (2026-11-01).
 - Tilted camera.
 - The player hovers over different parts of the fairway. Regions are selectable.
 - Sometimes, depending on skill, **lines** need to be aimed.
@@ -37,7 +38,7 @@ Each choice shows a success chance computed from stats, skills, gear, and condit
 | Planned Upshot | 10 m to about 80 m | Pick a landing region around the basket, and a line to it |
 | Planned Drive | Beyond about 80 m | Pick a fairway region, a line (straight, hyzer, anhyzer), and the shot shape |
 
-- Putting is unlocked first, at an easy skill level (e.g. Putting reaches Bogey from the starting Double bogey). New players get a taste of planning early.
+- Putting is unlocked first, at an easy skill level (e.g. Putting reaches Bogey from the starting Double bogey). New players get a taste of planning early. *(The beginner having none unlocked at the start is decided; this would be the first unlock.)*
 - Each one improves with its skill: more regions, more lines, smaller scatter.
 - The circle 2 zone (10–20 m) could count as upshot or putt. Decide during review.
 

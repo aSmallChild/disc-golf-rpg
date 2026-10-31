@@ -9,7 +9,8 @@ import {
 import { chanceFrom, type Reason, type ThrowEvent } from './events.ts';
 import type { FlightLeg } from './flight.ts';
 import { add2, clamp, distance2, normalize2, rightOf, scale2, sub2, toVec3 } from './geometry.ts';
-import type { Player } from './player.ts';
+import { BAD_RELEASE_CURVE, lineFade, lineLabels, lineReasons } from './lines.ts';
+import type { Player, ThrowLine } from './player.ts';
 import { nextGaussian, nextRange, nextSign, type Rng, rollD100 } from './rng.ts';
 import { golfScoreLabel } from './scoring.ts';
 
@@ -22,10 +23,10 @@ const SKILL_STEP = 8;
 
 export type Release = 'clean' | 'wobbly' | 'shank';
 
-/** How the throw was chosen. A Planned Shot names the region it is aimed into. */
+/** How the throw was chosen. A Planned Shot names the region it is aimed into and its line. */
 export type ThrowStyle =
   | { readonly kind: 'standard' }
-  | { readonly kind: 'planned'; readonly region: Region };
+  | { readonly kind: 'planned'; readonly region: Region; readonly line: ThrowLine };
 
 const standard: ThrowStyle = { kind: 'standard' };
 
@@ -67,6 +68,7 @@ export const throwReasons = (
       value: -Math.round((distance / player.maxRange) * 20),
     },
     ...(requested > player.maxRange ? [{ source: 'Aimed beyond your range', value: -10 }] : []),
+    ...(style.kind === 'planned' ? lineReasons[style.line] : []),
   ];
 };
 
@@ -98,6 +100,21 @@ const scatterFor = (release: Release, rng: Rng): readonly [along: number, across
   }
 };
 
+/**
+ * Sideways bulge as a fraction of the flown distance (+ = right). A Standard
+ * Shot's fade goes either way; a Planned Shot follows its chosen line.
+ */
+const fadeFor = (style: ThrowStyle, rng: Rng): readonly [fade: number, rng: Rng] => {
+  const line: ThrowLine | undefined = style.kind === 'planned' ? style.line : undefined;
+  if (line === undefined || line === 'straight') {
+    const [sign, r1] = nextSign(rng);
+    const [amount, r2] = line === 'straight' ? nextRange(r1, 0.01, 0.04) : nextRange(r1, 0.03, 0.1);
+    return [sign * amount, r2];
+  }
+  const [k, r1] = nextRange(rng, 0.8, 1.2);
+  return [lineFade[line] * k, r1];
+};
+
 const shankMessages = [
   'It barely left the tee box.',
   'That one is going to haunt you.',
@@ -127,21 +144,21 @@ export const resolveThrow = (
   // Planning narrows the spread, but a shank still falls short.
   const tighten = style.kind === 'planned' ? PLANNED_SCATTER : 1;
   const along = release === 'shank' ? rawAlong : rawAlong * tighten;
-  const across = rawAcross * tighten;
+  const curve = style.kind === 'planned' ? Math.sign(lineFade[style.line]) : 0;
+  const overCurve = release === 'clean' ? 0 : curve * BAD_RELEASE_CURVE;
+  const across = rawAcross * tighten + overCurve;
   const landing = add2(
     lie,
     add2(scale2(direction, distance * (1 + along)), scale2(rightOf(direction), distance * across)),
   );
 
-  // The curve's sideways bulge is cosmetic; a beginner's fade goes either way.
-  const [fadeSign, r3] = nextSign(r2);
-  const [fadeAmount, r4] = nextRange(r3, 0.03, 0.1);
+  const [fade, r4] = fadeFor(style, r2);
   const flown = distance2(lie, landing);
   const flight: FlightLeg = {
     from: toVec3(lie, elevationAt(hole, lie) + RELEASE_HEIGHT),
     to: toVec3(landing, elevationAt(hole, landing) + DISC_REST_HEIGHT),
     apex: 2 + flown * (release === 'shank' ? 0.05 : 0.12),
-    fade: fadeSign * fadeAmount * flown,
+    fade: fade * flown,
     until: 1,
     pace: 'throw',
   };
@@ -149,7 +166,8 @@ export const resolveThrow = (
   const [shankPick, r5] = nextRange(r4, 0, shankMessages.length);
   const check: ThrowEvent = {
     type: 'check',
-    label: style.kind === 'planned' ? `Release into ${style.region.label}` : 'Release',
+    label:
+      style.kind === 'planned' ? `${lineLabels[style.line]} release into ${style.region.label}` : 'Release',
     chance,
     roll,
     outcome: releaseLabels[release],

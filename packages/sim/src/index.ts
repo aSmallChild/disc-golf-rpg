@@ -1,5 +1,7 @@
+export * from './basket-zones.ts';
 export * from './events.ts';
 export * from './flight.ts';
+export * from './lines.ts';
 export * from './planned.ts';
 export * from './player.ts';
 export * from './putt.ts';

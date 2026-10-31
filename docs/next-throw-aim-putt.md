@@ -12,12 +12,17 @@ Status markers: **[done]** code exists, **[todo]** not started.
 - **[todo] Tree encounters.** Discs currently fly straight through trees. This is the next step.
 - **[done] (2026-11-01)** Planned Shots ("Big Brained Shot") for throws, first slice:
   - `Action` gains `{ type: 'planned-shot', regionId, target }`. `checkPlannedShot` (`sim/src/planned.ts`) rejects unknown regions, targets outside the region, putt range, and locked kinds, and says why.
-  - Upshot (≤ 80 m) vs drive (> 80 m) by throw length. `Player.plannedShots` lists unlocks; the beginner has `putt` and `upshot`.
+  - Upshot (≤ 80 m) vs drive (> 80 m) by throw length. `Player.plannedShots` lists unlocks. The beginner has none (user decision); the `tester` profile has everything and is what the game uses for now.
   - Effect: +10 to the release chance (listed as a reason), 0.6× scatter (a shank still falls short), and a message saying whether the disc ended up in the chosen region.
   - Renderer draws regions draped on the terrain (`renderer/src/regions.ts`), with hover, selected, and locked styles.
   - UI: Standard / Big Brained toggle; hovering a region shows its chance and reasons, or why it's locked; clicking inside picks the exact spot.
   - Test hole has six hand-drawn regions.
-- **[todo]** Action point cost for Planned Shots (needs the shot clock), aim lines by skill, planned putts with basket zones.
+- **[done] (2026-11-01)** Aim lines for Planned Shots (`sim/src/lines.ts`): straight / hyzer / anhyzer, unlocked per player (`Player.lines`). Hyzer +5 (forgiving), anhyzer −5 (hard to hold). The flight curves the chosen way, and a bad release over-curves. The aim preview draws the curve.
+- **[done] (2026-11-01)** Big Brained Putt with basket zones (`sim/src/basket-zones.ts`), inside circle 1 outside tap-in range:
+  - Centre chains (base 92, best planned odds), left/right chains (88, misses stay close on that side), top band (45, slides in, or sits on top and is marked underneath), pole (35, pole hole or bounces back), lay-up (97, never holed, leaves a tap-in).
+  - Planned bonus +8, then putting skill and distance like a standard putt. The first leg ends exactly on `basketZoneContact`, which the renderer also uses for the zone marker.
+  - UI: zone list with chances, hover for the breakdown, picking a zone moves to the basket view.
+- **[todo]** Action point cost for Planned Shots (needs the shot clock).
 
 ## Already written (not yet wired up or tested)
 - **[done]** `packages/course-format/src/index.ts`

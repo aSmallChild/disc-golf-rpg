@@ -1,6 +1,9 @@
 /** Planned Shots are unlocked separately by throw length (`ideas/aimed-shots.md`). */
 export type PlannedShotKind = 'putt' | 'upshot' | 'drive';
 
+/** Shot shapes for a Planned Shot. Hyzer curves left and anhyzer right (right-hand backhand). */
+export type ThrowLine = 'straight' | 'hyzer' | 'anhyzer';
+
 /**
  * Placeholder character until stats and the skill tree exist.
  * Skills are golf scores: +2 (Double bogey) is bad, -2 (Eagle) is good.
@@ -15,15 +18,26 @@ export type Player = {
   readonly maxRange: number;
   /** Which Planned Shots are unlocked. Will come from the skill tree later. */
   readonly plannedShots: readonly PlannedShotKind[];
+  /** Which lines a Planned Shot can take. Straight is always there. Will come from skill later. */
+  readonly lines: readonly ThrowLine[];
 };
 
-/**
- * Clearly bad, but not hopeless (`ideas/skill-scoring.md`).
- * Planned putts and upshots come early so new players get a taste of planning.
- */
+/** Clearly bad, but not hopeless (`ideas/skill-scoring.md`). Nothing planned is unlocked yet. */
 export const beginner: Player = {
   name: 'You',
   skills: { driving: 2, putting: 2 },
   maxRange: 110,
-  plannedShots: ['putt', 'upshot'],
+  plannedShots: [],
+  lines: ['straight'],
+};
+
+/**
+ * A beginner with every Planned Shot and line unlocked, for play-testing until
+ * the skill tree exists. Skills stay at beginner level so the odds stay honest.
+ */
+export const tester: Player = {
+  ...beginner,
+  name: 'Tester',
+  plannedShots: ['putt', 'upshot', 'drive'],
+  lines: ['straight', 'hyzer', 'anhyzer'],
 };

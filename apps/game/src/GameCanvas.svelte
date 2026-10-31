@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Hole, Vec2 } from '@dgrpg/course-format';
+import type { Hole, Vec2, Vec3 } from '@dgrpg/course-format';
 import { type CameraViewName, type HoleView, mountHoleView, type RegionDisplay } from '@dgrpg/renderer';
 import type { ThrowEvent } from '@dgrpg/sim';
 import { onMount } from 'svelte';
@@ -32,7 +32,8 @@ onMount(() => {
 // Thin pass-throughs so the parent can drive the scene via bind:this.
 export const showView = (name: CameraViewName, lie?: Vec2) => view?.showView(name, lie);
 export const setLie = (lie: Vec2) => view?.setLie(lie);
-export const setAim = (lie: Vec2, target: Vec2 | undefined) => view?.setAim(lie, target);
+export const setAim = (lie: Vec2, target: Vec2 | undefined, fade = 0) => view?.setAim(lie, target, fade);
+export const setPuttZone = (point: Vec3 | undefined) => view?.setPuttZone(point);
 export const showRegions = (display: RegionDisplay) => view?.showRegions(display);
 export const play = (events: readonly ThrowEvent[]) => view?.play(events) ?? Promise.resolve();
 </script>

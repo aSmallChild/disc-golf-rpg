@@ -1,4 +1,4 @@
-import { elevationAt, type Hole, type Vec2 } from '@dgrpg/course-format';
+import { elevationAt, type Hole, type Vec2, type Vec3 } from '@dgrpg/course-format';
 import { DISC_REST_HEIGHT, type ThrowEvent } from '@dgrpg/sim';
 import {
   Color,
@@ -17,7 +17,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { createAimGroup } from './aim.ts';
+import { createAimGroup, createZoneMarker } from './aim.ts';
 import { createBasketGroup } from './basket.ts';
 import { type CameraView, type CameraViewName, cameraView } from './camera-views.ts';
 import { createDiscMesh, createTrail, keepDiscReadable } from './disc.ts';
@@ -51,8 +51,10 @@ export type HoleView = {
   readonly showView: (name: CameraViewName, lie?: Vec2) => void;
   /** Places the disc at rest on the ground. */
   readonly setLie: (lie: Vec2) => void;
-  /** Shows the aim marker and line, or hides them with `undefined`. */
-  readonly setAim: (lie: Vec2, target: Vec2 | undefined) => void;
+  /** Shows the aim marker and line, or hides them with `undefined`. `fade` curves the line (metres, + = right). */
+  readonly setAim: (lie: Vec2, target: Vec2 | undefined, fade?: number) => void;
+  /** Marks the point a Big Brained Putt is aimed at, or clears it with `undefined`. */
+  readonly setPuttZone: (point: Vec3 | undefined) => void;
   /** Shows, hides, and highlights the Planned Shot regions. */
   readonly showRegions: (display: RegionDisplay) => void;
   /** Plays a throw's moves. Resolves when the disc comes to rest. */
@@ -144,6 +146,7 @@ export const mountHoleView = (
   let transition: { from: CameraView; to: CameraView; startedAt: number } | undefined;
   let playback: { plan: Timeline; startedAt: number; done: () => void } | undefined;
   let aim: Group | undefined;
+  let zoneMarker: Mesh | undefined;
 
   // Dragging the camera cancels any transition so the user stays in control.
   controls.addEventListener('start', () => {
@@ -308,15 +311,26 @@ export const mountHoleView = (
     },
     setLie,
     showRegions: regions.show,
-    setAim: (lie, target) => {
+    setAim: (lie, target, fade = 0) => {
       if (aim) {
         scene.remove(aim);
         disposeObject(aim);
         aim = undefined;
       }
       if (target) {
-        aim = createAimGroup(hole, lie, target);
+        aim = createAimGroup(hole, lie, target, fade);
         scene.add(aim);
+      }
+    },
+    setPuttZone: (point) => {
+      if (zoneMarker) {
+        scene.remove(zoneMarker);
+        disposeObject(zoneMarker);
+        zoneMarker = undefined;
+      }
+      if (point) {
+        zoneMarker = createZoneMarker(point);
+        scene.add(zoneMarker);
       }
     },
     play: (events) =>

@@ -1,4 +1,5 @@
-import { elevationAt, type Hole, type Vec2 } from '@dgrpg/course-format';
+import { elevationAt, type Hole, type Vec2, type Vec3 } from '@dgrpg/course-format';
+import { type FlightLeg, flightPoint } from '@dgrpg/sim';
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -8,6 +9,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   RingGeometry,
+  SphereGeometry,
 } from 'three';
 import { palette } from './palette.ts';
 
@@ -16,16 +18,22 @@ const LIFT = 0.25;
 
 /**
  * Target marker plus a dashed line draped over the terrain from the lie.
+ * `fade` bends the line sideways (metres, + = right) the same way the flight curve does.
  * Rebuilt whenever the target changes; it's cheap at this size.
  */
-export const createAimGroup = (hole: Hole, lie: Vec2, target: Vec2): Group => {
-  const [lx, lz] = lie;
+export const createAimGroup = (hole: Hole, lie: Vec2, target: Vec2, fade = 0): Group => {
   const [tx, tz] = target;
+  const groundLeg: FlightLeg = {
+    from: [lie[0], 0, lie[1]],
+    to: [tx, 0, tz],
+    apex: 0,
+    fade,
+    until: 1,
+    pace: 'throw',
+  };
 
   const points = Array.from({ length: LINE_SAMPLES + 1 }, (_, index) => {
-    const t = index / LINE_SAMPLES;
-    const x = lx + (tx - lx) * t;
-    const z = lz + (tz - lz) * t;
+    const [x, , z] = flightPoint(groundLeg, index / LINE_SAMPLES);
     return [x, elevationAt(hole, [x, z]) + LIFT, z];
   }).flat();
   const lineGeometry = new BufferGeometry();
@@ -53,4 +61,19 @@ export const createAimGroup = (hole: Hole, lie: Vec2, target: Vec2): Group => {
   group.add(line, ring);
   group.name = 'aim';
   return group;
+};
+
+/**
+ * A small dot on the exact point a Big Brained Putt is aimed at. Drawn on top
+ * of everything so the chains don't hide it.
+ */
+export const createZoneMarker = (point: Vec3): Mesh => {
+  const marker = new Mesh(
+    new SphereGeometry(0.045, 12, 8),
+    new MeshBasicMaterial({ color: palette.target, transparent: true, opacity: 0.9, depthTest: false }),
+  );
+  marker.position.set(...point);
+  marker.renderOrder = 10;
+  marker.name = 'zone-marker';
+  return marker;
 };

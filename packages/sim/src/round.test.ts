@@ -12,6 +12,7 @@ const pro: Player = {
   skills: { driving: -3, putting: -3 },
   maxRange: 150,
   plannedShots: ['putt', 'upshot', 'drive'],
+  lines: ['straight', 'hyzer', 'anhyzer'],
 };
 
 const checkOf = (events: readonly ThrowEvent[]) => events.find((event) => event.type === 'check');

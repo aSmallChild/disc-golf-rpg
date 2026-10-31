@@ -9,7 +9,7 @@ import { DISC_REST_HEIGHT, RELEASE_HEIGHT } from './throw.ts';
 
 /** Circle 1: inside this distance a Standard Shot becomes a putt at the basket. */
 export const PUTT_RANGE = 10;
-const TAP_IN_RANGE = 1.5;
+export const TAP_IN_RANGE = 1.5;
 const SKILL_STEP = 8;
 
 export type PuttResolution = {
