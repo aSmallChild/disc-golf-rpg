@@ -17,7 +17,9 @@ Status markers: **[done]** code exists, **[todo]** not started.
   - Renderer draws regions draped on the terrain (`renderer/src/regions.ts`), with hover, selected, and locked styles.
   - UI: Standard / Big Brained toggle; hovering a region shows its chance and reasons, or why it's locked; clicking inside picks the exact spot.
   - Test hole has six hand-drawn regions.
-- **[done] (2026-11-01)** Aim lines for Planned Shots (`sim/src/lines.ts`): straight / hyzer / anhyzer, unlocked per player (`Player.lines`). Hyzer +5 (forgiving), anhyzer −5 (hard to hold). The flight curves the chosen way, and a bad release over-curves. The aim preview draws the curve.
+- **[done] (2026-11-01)** Aim lines for Planned Shots (`sim/src/lines.ts`): straight / hyzer / anhyzer, plus backhand / forehand. Players are right-handed for now (RHBH / RHFH). Unlocked per player (`Player.lines`, `Player.throwTypes`). Hyzer +5 (forgiving), anhyzer −5 (hard to hold).
+  - `curveDirection(line, throwType)`: an RHBH hyzer finishes left, an RHBH anhyzer right, and a forehand mirrors both.
+  - The flight path bows out opposite the curve (an RHBH hyzer is released out right and curves back left). A bad release over-curves in the curve's direction. The aim preview draws the same shape.
 - **[done] (2026-11-01)** Big Brained Putt with basket zones (`sim/src/basket-zones.ts`), inside circle 1 outside tap-in range:
   - Centre chains (base 92, best planned odds), left/right chains (88, misses stay close on that side), top band (45, slides in, or sits on top and is marked underneath), pole (35, pole hole or bounces back), lay-up (97, never holed, leaves a tap-in).
   - Planned bonus +8, then putting skill and distance like a standard putt. The first leg ends exactly on `basketZoneContact`, which the renderer also uses for the zone marker.

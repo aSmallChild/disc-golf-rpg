@@ -13,15 +13,18 @@ import {
   createRound,
   distanceToBasket,
   holeResultLabel,
-  lineFade,
+  lineBulge,
   lineLabels,
   previewChance,
   previewReasons,
   shotKind,
   type ThrowEvent,
   type ThrowLine,
+  type ThrowType,
   tester,
   throwLines,
+  throwTypeLabels,
+  throwTypes,
 } from '@dgrpg/sim';
 import { fade, fly } from 'svelte/transition';
 import GameCanvas from './GameCanvas.svelte';
@@ -48,6 +51,7 @@ let canvas: GameCanvas | undefined = $state();
 let round = $state.raw(createRound(hole, player, Date.now() >>> 0));
 let mode = $state<Mode>('standard');
 let line = $state<ThrowLine>('straight');
+let throwType = $state<ThrowType>('backhand');
 /** Standard Shot target. */
 let target = $state.raw<Vec2 | undefined>(undefined);
 /** Planned Shot choice: a region and the clicked point inside it. */
@@ -72,6 +76,7 @@ const plannedAt = (regionId: string, point: Vec2, shape: ThrowLine = line): Acti
   regionId,
   target: point,
   line: shape,
+  throwType,
 });
 
 const action = $derived.by((): Action | undefined => {
@@ -84,7 +89,7 @@ const aimPoint = $derived(
   kind === 'putt' ? hole.basket : action?.type === 'standard-shot' ? target : planned?.target,
 );
 /** Planned Shots preview their line's curve; Standard Shots are drawn straight. */
-const aimFade = $derived(planning && planned ? lineFade[line] * distanceTo(planned.target) : 0);
+const aimFade = $derived(planning && planned ? lineBulge(line, throwType) * distanceTo(planned.target) : 0);
 
 /** Regions the player can't plan into from here, judged at each region's centre. */
 const locked = $derived(
@@ -269,6 +274,18 @@ const playAgain = () => {
       </button>
     </div>
     {#if mode === 'planned'}
+      <div class="row" role="group" aria-label="Throw type">
+        {#each throwTypes as type (type)}
+          <button
+            type="button"
+            class:active={throwType === type}
+            disabled={type !== 'backhand' && !player.throwTypes.includes(type)}
+            onclick={() => (throwType = type)}
+          >
+            {throwTypeLabels[type]}
+          </button>
+        {/each}
+      </div>
       <div class="row" role="group" aria-label="Line">
         {#each throwLines as shape (shape)}
           <button
@@ -289,7 +306,7 @@ const playAgain = () => {
       <p class="status">Click the ground to aim.</p>
     {:else if planned}
       <p class="status">
-        {lineLabels[line]} into {plannedName}, {distanceTo(planned.target)} m: clean release {chance}%
+        {throwTypeLabels[throwType]} {lineLabels[line].toLowerCase()} into {plannedName}, {distanceTo(planned.target)} m: clean release {chance}%
       </p>
       <button type="button" onclick={doThrow} disabled={!canThrow}>Throw</button>
     {:else}
@@ -300,7 +317,7 @@ const playAgain = () => {
 
 {#if hoverInfo}
   <div class="tooltip" style:left="{hoverInfo.screen.x + 18}px" style:top="{hoverInfo.screen.y + 18}px">
-    <h3>{hoverInfo.region.label} · {hoverInfo.distance} m · {lineLabels[line]}</h3>
+    <h3>{hoverInfo.region.label} · {hoverInfo.distance} m · {throwTypeLabels[throwType]} {lineLabels[line].toLowerCase()}</h3>
     {#if hoverInfo.why}
       <p class="bad">{hoverInfo.why}</p>
     {:else}
