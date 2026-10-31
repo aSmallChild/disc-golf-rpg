@@ -34,8 +34,5 @@
       ]
     }
   },
-  "resources": [
-    "file://README.md",
-    "file://.kiro/steering/**/*.md"
-  ]
+  "resources": ["file://README.md", "file://.kiro/steering/**/*.md"]
 }
