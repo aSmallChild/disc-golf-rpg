@@ -1,0 +1,23 @@
+{
+  "name": "@dgrpg/game",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@dgrpg/course-format": "workspace:*",
+    "@dgrpg/renderer": "workspace:*",
+    "@dgrpg/sim": "workspace:*",
+    "svelte": "^5.57.3"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte-check": "^4.7.7",
+    "vite": "^8.3.5"
+  }
+}

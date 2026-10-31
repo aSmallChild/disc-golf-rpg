@@ -1,0 +1,15 @@
+{
+  "name": "@dgrpg/sim",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dgrpg/course-format": "workspace:*"
+  }
+}

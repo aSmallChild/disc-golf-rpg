@@ -1,0 +1,21 @@
+/* UI palette. Real-life, muted tones (see .kiro/steering/tech.md). */
+:root {
+  --ui-bg: rgb(38 40 36 / 0.82);
+  --ui-border: #6b6a5e;
+  --ui-text: #e6e2d6;
+  --ui-muted: #a9a593;
+  --ui-good: #8fa86a;
+  --ui-bad: #b0704f;
+  --ui-font: system-ui, sans-serif;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #b7c2c9;
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
