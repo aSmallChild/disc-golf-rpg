@@ -1,0 +1,41 @@
+{
+  "name": "dgrpg-dev",
+  "description": "Everyday dev agent for the disc-golf-rpg pnpm/TypeScript/Svelte 5/Three.js monorepo. Auto-approves read-only and low-risk shell commands; destructive commands still prompt.",
+  "prompt": "You are the everyday development agent for the disc-golf-rpg monorepo (pnpm workspaces, TypeScript 6, Svelte 5 on Vite, Three.js, Vitest, Biome). Follow the steering files loaded as resources; workspace rules win over general habits.\n\nShell environment: Node 26 and pnpm are only on PATH via nvm. Start every shell command that needs node, pnpm or npx with exactly:\nexport PATH=~/.nvm/versions/node/v26.13.0/bin:$PATH; \nThat exact prefix is what the auto-approve rules expect.\n\nAuto-approval only covers single commands. Commands chained with ; && || or pipes, or containing $, backticks or redirects (> <), will prompt the user. Prefer one simple command per call, and use the built-in read/grep/glob/code tools instead of shell pipelines where possible.\n\nNever run destructive commands (rm -r/-f, git push, git reset --hard, git clean, git checkout --, git restore, sudo, piping downloads into a shell) without the user asking for them. Validate changes with pnpm test, pnpm typecheck and pnpm lint before reporting done.",
+  "tools": ["@builtin"],
+  "allowedTools": [
+    "fs_read",
+    "fs_write",
+    "grep",
+    "glob",
+    "code",
+    "web_search",
+    "web_fetch",
+    "thinking",
+    "todo_list",
+    "introspect",
+    "use_subagent"
+  ],
+  "toolsSettings": {
+    "fs_write": {
+      "allowedPaths": ["./**"]
+    },
+    "execute_bash": {
+      "allowedCommands": [
+        "(ls|cd|pwd|cat|head|tail|wc|grep|rg|find|sed|awk|sort|uniq|diff|which|echo|mkdir|cp|mv|touch)( [^;&|`$<>\\n]*)?",
+        "git (status|diff|log|show|add|commit|branch)( [^;&|`$<>\\n]*)?",
+        "(export PATH=~/\\.nvm/versions/node/v26\\.13\\.0/bin:\\$PATH; *)?node( [^;&|`$<>\\n]*)?",
+        "(export PATH=~/\\.nvm/versions/node/v26\\.13\\.0/bin:\\$PATH; *)?pnpm( -r| --filter [^ ;&|`$<>\\n]+)* (dev|test|typecheck|lint|format|build|install|i|exec|vitest|biome|tsc|svelte-check)( [^;&|`$<>\\n]*)?",
+        "(export PATH=~/\\.nvm/versions/node/v26\\.13\\.0/bin:\\$PATH; *)?npx (vitest|biome|tsc|svelte-check)( [^;&|`$<>\\n]*)?"
+      ],
+      "deniedCommands": [
+        "find .*-(delete|exec|execdir|ok)( .*)?",
+        "git branch .*(-D|-d|--delete|-f|--force)( .*)?"
+      ]
+    }
+  },
+  "resources": [
+    "file://README.md",
+    "file://.kiro/steering/**/*.md"
+  ]
+}
