@@ -1,7 +1,7 @@
 ---
-tags: []
-status: draft
-related: [skill-tree.md, character-stats.md, luck.md, gear-chalk-bag.md, shot-clock.md]
+tags: [overarching-mechanic]
+status: accepted
+related: [skill-tree.md, character-stats.md, luck.md, gear-chalk-bag.md, shot-clock.md, nerve-meter.md]
 ---
 # Skills Follow Disc Golf Scoring
 

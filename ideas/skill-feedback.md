@@ -1,6 +1,6 @@
 ---
-tags: []
-status: draft
+tags: [core-loop]
+status: accepted
 related: [aimed-shots.md, luck.md, weather.md, ground-surfaces.md]
 ---
 # Skill Feedback

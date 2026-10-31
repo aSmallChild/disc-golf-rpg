@@ -1,6 +1,6 @@
 ---
-tags: []
-status: draft
+tags: [content-pipeline]
+status: accepted
 related: [terrain-height.md, ground-surfaces.md, tournaments.md]
 ---
 # Course Design and Generation

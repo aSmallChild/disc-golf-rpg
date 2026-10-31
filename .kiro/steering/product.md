@@ -10,6 +10,9 @@ Web-based, top-down, not-too-serious disc golf RPG. Hosted on the user's website
 - **Skill tree**: skills improve chances or unlock abilities; skills unlock other skills.
 - **Character stats**: Fallout SPECIAL-style, but disc-golf themed (see `ideas/character-stats.md`).
 - **Luck is central**: both an attribute and a skill (concentrated luck, flukes).
+- **Nerves**: an overarching pressure meter. Stakes and expectation raise it. The **Composure** attribute, gear, skills, and layups/safe shots lower it (`ideas/nerve-meter.md`).
+- **Tilt and meltdowns**: frustration after bad shots builds tilt. At the top the character has a meltdown and must cool off (`ideas/tilt-anger.md`).
+- **No cosmetic items**: every item ties into the mechanics in more than one way, ideally with a trade-off (`ideas/item-design-principle.md`).
 - **Gear-driven**: each gear item (chalk bag, retriever stick, etc.) boosts specific chances. Higher skill = fewer negatives, bigger benefits.
 - **Transparent feedback**: every skill roll reports why it succeeded or failed.
 - **Dice over physics**: outcomes come from rolls, not physics. The visuals act out the roll convincingly (e.g. a bad trunk kick that really touches the trunk).

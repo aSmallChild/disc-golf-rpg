@@ -1,6 +1,6 @@
 ---
-tags: []
-status: draft
+tags: [core-loop]
+status: accepted
 related: [shot-types.md, skill-feedback.md, luck.md]
 ---
 # Aimed Shots

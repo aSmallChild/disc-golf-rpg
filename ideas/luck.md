@@ -1,7 +1,7 @@
 ---
-tags: []
-status: draft
-related: [character-stats.md, skill-tree.md, skill-feedback.md]
+tags: [overarching-mechanic]
+status: accepted
+related: [character-stats.md, skill-tree.md, skill-feedback.md, nerve-meter.md]
 ---
 # Luck
 
