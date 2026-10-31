@@ -140,6 +140,13 @@ export const pointInPolygon = ([x, z]: Vec2, polygon: readonly Vec2[]): boolean 
 export const regionAt = (hole: Hole, point: Vec2): Region | undefined =>
   hole.regions.find((region) => pointInPolygon(point, region.polygon));
 
+/** Average of the corners: good enough to judge a hand-drawn region's distance. */
+export const regionCentre = (region: Region): Vec2 => {
+  const count = Math.max(region.polygon.length, 1);
+  const [sx, sz] = region.polygon.reduce<Vec2>(([x, z], [px, pz]) => [x + px, z + pz], [0, 0]);
+  return [sx / count, sz / count];
+};
+
 /** Keeps a point inside the playable area, with a margin. */
 export const clampToHole = (hole: Hole, [x, z]: Vec2, margin = 1): Vec2 => {
   const [width, depth] = holeSize(hole);

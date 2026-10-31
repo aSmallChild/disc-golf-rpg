@@ -18,6 +18,29 @@ export const flatHole = (): Hole => {
       values: Array.from({ length: columns * rows }, () => 'fairway' as const),
     },
     trees: [],
-    regions: [],
+    regions: [
+      // 40–70 m from the tee: upshot length.
+      {
+        id: 'near',
+        label: 'Near fairway',
+        polygon: [
+          [10, 80],
+          [50, 80],
+          [50, 110],
+          [10, 110],
+        ],
+      },
+      // 90–120 m from the tee: drive length.
+      {
+        id: 'far',
+        label: 'Far fairway',
+        polygon: [
+          [10, 30],
+          [50, 30],
+          [50, 60],
+          [10, 60],
+        ],
+      },
+    ],
   };
 };

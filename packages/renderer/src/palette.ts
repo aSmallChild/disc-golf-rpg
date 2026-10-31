@@ -20,4 +20,10 @@ export const palette = {
   discTrail: 0xe6dcc8,
   target: 0xe6dcc8,
   aimLine: 0xe6dcc8,
+  /** Planned Shot regions: pale straw, so they read on grass without looking painted on. */
+  region: 0xd8cfa8,
+  regionHover: 0xf0e8c8,
+  regionSelected: 0xf3ead0,
+  /** Regions the player can't plan into yet: a dull rust. */
+  regionLocked: 0x8a5a44,
 } as const;

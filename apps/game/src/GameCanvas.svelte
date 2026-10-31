@@ -1,17 +1,30 @@
 <script lang="ts">
 import type { Hole, Vec2 } from '@dgrpg/course-format';
-import { type CameraViewName, type HoleView, mountHoleView } from '@dgrpg/renderer';
+import { type CameraViewName, type HoleView, mountHoleView, type RegionDisplay } from '@dgrpg/renderer';
 import type { ThrowEvent } from '@dgrpg/sim';
 import { onMount } from 'svelte';
 
-const { hole, onGroundClick }: { hole: Hole; onGroundClick: (point: Vec2) => void } = $props();
+type Screen = { readonly x: number; readonly y: number };
+
+const {
+  hole,
+  onGroundClick,
+  onGroundHover,
+}: {
+  hole: Hole;
+  onGroundClick: (point: Vec2) => void;
+  onGroundHover: (point: Vec2 | undefined, screen: Screen) => void;
+} = $props();
 
 // Never deep $state: Three.js objects must not be proxied. HoleView is held raw.
 let canvas: HTMLCanvasElement;
 let view = $state.raw<HoleView | undefined>(undefined);
 
 onMount(() => {
-  const mounted = mountHoleView(canvas, hole, { onGroundClick: (point) => onGroundClick(point) });
+  const mounted = mountHoleView(canvas, hole, {
+    onGroundClick: (point) => onGroundClick(point),
+    onGroundHover: (point, screen) => onGroundHover(point, screen),
+  });
   view = mounted;
   return mounted.dispose;
 });
@@ -20,6 +33,7 @@ onMount(() => {
 export const showView = (name: CameraViewName, lie?: Vec2) => view?.showView(name, lie);
 export const setLie = (lie: Vec2) => view?.setLie(lie);
 export const setAim = (lie: Vec2, target: Vec2 | undefined) => view?.setAim(lie, target);
+export const showRegions = (display: RegionDisplay) => view?.showRegions(display);
 export const play = (events: readonly ThrowEvent[]) => view?.play(events) ?? Promise.resolve();
 </script>
 

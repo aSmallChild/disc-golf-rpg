@@ -24,16 +24,26 @@ import { createDiscMesh, createTrail, keepDiscReadable } from './disc.ts';
 import { createLights } from './lighting.ts';
 import { palette } from './palette.ts';
 import { positionAt, type Timeline, timeline } from './playback.ts';
+import { createRegionLayer, type RegionDisplay } from './regions.ts';
 import { createTeePad } from './tee.ts';
 import { createTerrainMesh } from './terrain.ts';
 import { createTreeGroup } from './trees.ts';
 
 export { CAMERA_TILT, type CameraViewName } from './camera-views.ts';
 export { palette } from './palette.ts';
+export type { RegionDisplay } from './regions.ts';
 
 export type HoleViewOptions = {
   /** Called with the ground point when the player clicks (not drags) the terrain. */
   readonly onGroundClick?: (point: Vec2) => void;
+  /**
+   * Called as the pointer moves: the ground point under it (or undefined off the
+   * terrain) and the pointer's position in the canvas, for tooltips.
+   */
+  readonly onGroundHover?: (
+    point: Vec2 | undefined,
+    screen: { readonly x: number; readonly y: number },
+  ) => void;
 };
 
 export type HoleView = {
@@ -43,6 +53,8 @@ export type HoleView = {
   readonly setLie: (lie: Vec2) => void;
   /** Shows the aim marker and line, or hides them with `undefined`. */
   readonly setAim: (lie: Vec2, target: Vec2 | undefined) => void;
+  /** Shows, hides, and highlights the Planned Shot regions. */
+  readonly showRegions: (display: RegionDisplay) => void;
   /** Plays a throw's moves. Resolves when the disc comes to rest. */
   readonly play: (events: readonly ThrowEvent[]) => Promise<void>;
   readonly dispose: () => void;
@@ -52,6 +64,8 @@ const TRANSITION_SECONDS = 0.9;
 /** Pointer travel (px) below which a press counts as a click, not a camera drag. */
 const CLICK_TOLERANCE = 6;
 const FOLLOW_STRENGTH = 0.08;
+/** Keyboard pan speed, in camera-to-target distances per second. */
+const PAN_SPEED = 0.9;
 
 const easeInOut = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
@@ -103,6 +117,9 @@ export const mountHoleView = (
   basket.position.set(hole.basket[0], elevationAt(hole, hole.basket), hole.basket[1]);
   scene.add(basket);
   scene.add(createTeePad(hole));
+
+  const regions = createRegionLayer(hole);
+  scene.add(regions.group);
 
   const disc = createDiscMesh();
   const trail = createTrail();
@@ -163,8 +180,18 @@ export const mountHoleView = (
     }
   };
 
-  // Click (not drag) on the terrain reports a ground point.
+  // Click (not drag) on the terrain reports a ground point; moving reports hover.
   const raycaster = new Raycaster();
+  const groundAt = (clientX: number, clientY: number): Vec2 | undefined => {
+    const rect = canvas.getBoundingClientRect();
+    const pointer = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(terrain, false)[0];
+    return hit ? [hit.point.x, hit.point.z] : undefined;
+  };
   let pressedAt: Vector2 | undefined;
   const onPointerDown = (event: PointerEvent) => {
     pressedAt = event.button === 0 ? new Vector2(event.clientX, event.clientY) : undefined;
@@ -174,17 +201,77 @@ export const mountHoleView = (
     pressedAt = undefined;
     if (!start || !options.onGroundClick) return;
     if (start.distanceTo(new Vector2(event.clientX, event.clientY)) > CLICK_TOLERANCE) return;
-    const rect = canvas.getBoundingClientRect();
-    const pointer = new Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(terrain, false)[0];
-    if (hit) options.onGroundClick([hit.point.x, hit.point.z]);
+    const point = groundAt(event.clientX, event.clientY);
+    if (point) options.onGroundClick(point);
   };
+  const onPointerMove = (event: PointerEvent) => {
+    if (!options.onGroundHover || event.buttons !== 0) return; // No hover while dragging the camera.
+    const rect = canvas.getBoundingClientRect();
+    options.onGroundHover(groundAt(event.clientX, event.clientY), {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+  };
+  const onPointerLeave = () => options.onGroundHover?.(undefined, { x: 0, y: 0 });
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerleave', onPointerLeave);
+
+  // Keyboard panning (WASD / arrows) along the ground, relative to where the camera faces.
+  const panKeys: Record<string, readonly [forward: number, right: number]> = {
+    KeyW: [1, 0],
+    ArrowUp: [1, 0],
+    KeyS: [-1, 0],
+    ArrowDown: [-1, 0],
+    KeyA: [0, -1],
+    ArrowLeft: [0, -1],
+    KeyD: [0, 1],
+    ArrowRight: [0, 1],
+  };
+  const heldKeys = new Set<string>();
+  const isTyping = (target: EventTarget | null) =>
+    target instanceof HTMLElement &&
+    (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (!(event.code in panKeys) || isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey)
+      return;
+    event.preventDefault(); // Arrows would otherwise scroll the page.
+    heldKeys.add(event.code);
+  };
+  const onKeyUp = (event: KeyboardEvent) => {
+    heldKeys.delete(event.code);
+  };
+  const onBlur = () => heldKeys.clear();
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', onBlur);
+
+  const stepKeyboardPan = (seconds: number) => {
+    if (heldKeys.size === 0) return;
+    const [forward, right] = [...heldKeys].reduce(
+      ([f, r], code) => {
+        const [df, dr] = panKeys[code] ?? [0, 0];
+        return [f + df, r + dr];
+      },
+      [0, 0],
+    );
+    if (forward === 0 && right === 0) return;
+    transition = undefined; // The player took the camera.
+    const facing = new Vector3().subVectors(controls.target, camera.position).setY(0);
+    if (facing.lengthSq() < 1e-6) camera.getWorldDirection(facing).setY(0);
+    facing.normalize();
+    const side = new Vector3(-facing.z, 0, facing.x);
+    // Faster when zoomed out, so a pan always feels like the same screen speed.
+    const speed = Math.max(camera.position.distanceTo(controls.target), 5) * PAN_SPEED;
+    const move = facing
+      .multiplyScalar(forward)
+      .add(side.multiplyScalar(right))
+      .normalize()
+      .multiplyScalar(speed * seconds);
+    camera.position.add(move);
+    controls.target.add(move);
+  };
 
   const resize = () => {
     const { clientWidth, clientHeight } = canvas;
@@ -196,8 +283,13 @@ export const mountHoleView = (
   observer.observe(canvas);
   resize();
 
+  let lastFrame: number | undefined;
   renderer.setAnimationLoop((now) => {
+    // Clamp the step so a backgrounded tab doesn't jump the camera on return.
+    const seconds = lastFrame === undefined ? 0 : Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
     stepTransition(now);
+    stepKeyboardPan(seconds);
     stepPlayback(now);
     controls.update();
     keepDiscReadable(disc, camera);
@@ -215,6 +307,7 @@ export const mountHoleView = (
       transition = { from: currentView(), to: cameraView(hole, name, lie), startedAt: performance.now() };
     },
     setLie,
+    showRegions: regions.show,
     setAim: (lie, target) => {
       if (aim) {
         scene.remove(aim);
@@ -246,6 +339,11 @@ export const mountHoleView = (
       controls.dispose();
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       disposeObject(scene);
       renderer.dispose();
     },

@@ -7,7 +7,12 @@ import { apply, createRound, previewChance, type RoundState, shotKind } from './
 import { flatHole } from './test-hole.ts';
 import { releaseFor, throwReasons } from './throw.ts';
 
-const pro: Player = { name: 'Pro', skills: { driving: -3, putting: -3 }, maxRange: 150 };
+const pro: Player = {
+  name: 'Pro',
+  skills: { driving: -3, putting: -3 },
+  maxRange: 150,
+  plannedShots: ['putt', 'upshot', 'drive'],
+};
 
 const checkOf = (events: readonly ThrowEvent[]) => events.find((event) => event.type === 'check');
 
@@ -77,7 +82,7 @@ describe('round', () => {
   it('putts inside circle 1, and a tap-in is almost certain', () => {
     const near: RoundState = { ...createRound(flatHole(), beginner, 5), lie: [30, 21] };
     expect(shotKind(near)).toBe('putt');
-    expect(previewChance(near, near.hole.basket)).toBe(99);
+    expect(previewChance(near, { type: 'standard-shot', target: near.hole.basket })).toBe(99);
     const holed = seeds.filter(
       (seed) =>
         apply({ ...near, rng: { seed, state: seed } }, { type: 'standard-shot', target: [0, 0] }).state
@@ -110,7 +115,9 @@ describe('round', () => {
     ]);
     const round = createRound(flatHole(), beginner, 1);
     const check = checkOf(apply(round, { type: 'standard-shot', target: [30, 60] }).events);
-    expect(check?.type === 'check' && check.chance).toBe(previewChance(round, [30, 60]));
+    expect(check?.type === 'check' && check.chance).toBe(
+      previewChance(round, { type: 'standard-shot', target: [30, 60] }),
+    );
   });
 
   it('classifies releases by roll', () => {

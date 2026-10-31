@@ -1,4 +1,11 @@
-import { elevationAt, type Hole, holeSize, type Vec2 } from '@dgrpg/course-format';
+import {
+  elevationAt,
+  type Hole,
+  holeSize,
+  pointInPolygon,
+  type Region,
+  type Vec2,
+} from '@dgrpg/course-format';
 import { chanceFrom, type Reason, type ThrowEvent } from './events.ts';
 import type { FlightLeg } from './flight.ts';
 import { add2, clamp, distance2, normalize2, rightOf, scale2, sub2, toVec3 } from './geometry.ts';
@@ -15,6 +22,16 @@ const SKILL_STEP = 8;
 
 export type Release = 'clean' | 'wobbly' | 'shank';
 
+/** How the throw was chosen. A Planned Shot names the region it is aimed into. */
+export type ThrowStyle =
+  | { readonly kind: 'standard' }
+  | { readonly kind: 'planned'; readonly region: Region };
+
+const standard: ThrowStyle = { kind: 'standard' };
+
+/** A Planned Shot's scatter is this fraction of a Standard Shot's. */
+const PLANNED_SCATTER = 0.6;
+
 export type ThrowResolution = {
   readonly events: readonly ThrowEvent[];
   /** Where the disc ends up, or undefined if it went out of bounds. */
@@ -28,12 +45,19 @@ const releaseLabels: Record<Release, string> = {
   shank: 'Shanked it',
 };
 
-/** The modifiers for a Standard Shot. Pure, so the UI preview and the throw always agree. */
-export const throwReasons = (player: Player, lie: Vec2, target: Vec2): readonly Reason[] => {
+/** The modifiers for a throw. Pure, so the UI preview and the throw always agree. */
+export const throwReasons = (
+  player: Player,
+  lie: Vec2,
+  target: Vec2,
+  style: ThrowStyle = standard,
+): readonly Reason[] => {
   const requested = distance2(lie, target);
   const distance = Math.min(requested, player.maxRange);
   return [
-    { source: 'Standard Shot', value: 70 },
+    style.kind === 'planned'
+      ? { source: 'Big Brained Shot (planned the line)', value: 80 }
+      : { source: 'Standard Shot', value: 70 },
     {
       source: `Driving skill (${golfScoreLabel(player.skills.driving)})`,
       value: -player.skills.driving * SKILL_STEP,
@@ -46,8 +70,8 @@ export const throwReasons = (player: Player, lie: Vec2, target: Vec2): readonly 
   ];
 };
 
-export const throwChance = (player: Player, lie: Vec2, target: Vec2): number =>
-  chanceFrom(throwReasons(player, lie, target), 5, 95);
+export const throwChance = (player: Player, lie: Vec2, target: Vec2, style: ThrowStyle = standard): number =>
+  chanceFrom(throwReasons(player, lie, target, style), 5, 95);
 
 /** Clean if the roll is under the chance, wobbly in the next band, otherwise a shank. */
 export const releaseFor = (roll: number, chance: number): Release =>
@@ -81,7 +105,7 @@ const shankMessages = [
 ] as const;
 
 /**
- * Resolves a Standard Shot from `lie` toward `target` with dice.
+ * Resolves a Standard or Planned Shot from `lie` toward `target` with dice.
  * The flight legs describe exactly what the renderer will show.
  */
 export const resolveThrow = (
@@ -90,15 +114,20 @@ export const resolveThrow = (
   lie: Vec2,
   target: Vec2,
   rng: Rng,
+  style: ThrowStyle = standard,
 ): ThrowResolution => {
-  const reasons = throwReasons(player, lie, target);
+  const reasons = throwReasons(player, lie, target, style);
   const chance = chanceFrom(reasons, 5, 95);
   const [roll, r1] = rollD100(rng);
   const release = releaseFor(roll, chance);
 
   const direction = normalize2(sub2(target, lie));
   const distance = Math.min(distance2(lie, target), player.maxRange);
-  const [along, across, r2] = scatterFor(release, r1);
+  const [rawAlong, rawAcross, r2] = scatterFor(release, r1);
+  // Planning narrows the spread, but a shank still falls short.
+  const tighten = style.kind === 'planned' ? PLANNED_SCATTER : 1;
+  const along = release === 'shank' ? rawAlong : rawAlong * tighten;
+  const across = rawAcross * tighten;
   const landing = add2(
     lie,
     add2(scale2(direction, distance * (1 + along)), scale2(rightOf(direction), distance * across)),
@@ -120,7 +149,7 @@ export const resolveThrow = (
   const [shankPick, r5] = nextRange(r4, 0, shankMessages.length);
   const check: ThrowEvent = {
     type: 'check',
-    label: 'Release',
+    label: style.kind === 'planned' ? `Release into ${style.region.label}` : 'Release',
     chance,
     roll,
     outcome: releaseLabels[release],
@@ -162,12 +191,25 @@ export const resolveThrow = (
     pace: 'bounce',
   };
 
+  const regionResult: readonly ThrowEvent[] =
+    style.kind === 'planned'
+      ? [
+          {
+            type: 'message',
+            text: pointInPolygon(rollEnd, style.region.polygon)
+              ? `Landed in ${style.region.label}. Big brain.`
+              : `Missed ${style.region.label}. So much for the plan.`,
+          },
+        ]
+      : [];
+
   return {
     events: [
       check,
       ...messages,
       { type: 'move', leg: flight },
       ...(rollDistance > 0.3 ? [{ type: 'move', leg: rollLeg } as const] : []),
+      ...regionResult,
       { type: 'lie', point: rollEnd },
     ],
     lie: rollEnd,

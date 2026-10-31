@@ -6,6 +6,7 @@
   --ui-muted: #a9a593;
   --ui-good: #8fa86a;
   --ui-bad: #b0704f;
+  --ui-active: rgb(230 226 214 / 0.14);
   --ui-font: system-ui, sans-serif;
 }
 

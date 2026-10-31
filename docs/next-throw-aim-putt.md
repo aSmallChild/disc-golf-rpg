@@ -10,7 +10,14 @@ Status markers: **[done]** code exists, **[todo]** not started.
 - **[done]** Disc mesh (grows with camera distance so it stays visible), trail, flight playback following the sim's curve, camera follows the disc then settles behind the new lie.
 - **[done]** Roll breakdown panel: every reason, chance, roll, outcome, flavour text. Hole result in golf terms.
 - **[todo] Tree encounters.** Discs currently fly straight through trees. This is the next step.
-- **[todo]** Aim regions and Planned Shots ("Big Brained Shot"), basket zones.
+- **[done] (2026-11-01)** Planned Shots ("Big Brained Shot") for throws, first slice:
+  - `Action` gains `{ type: 'planned-shot', regionId, target }`. `checkPlannedShot` (`sim/src/planned.ts`) rejects unknown regions, targets outside the region, putt range, and locked kinds, and says why.
+  - Upshot (≤ 80 m) vs drive (> 80 m) by throw length. `Player.plannedShots` lists unlocks; the beginner has `putt` and `upshot`.
+  - Effect: +10 to the release chance (listed as a reason), 0.6× scatter (a shank still falls short), and a message saying whether the disc ended up in the chosen region.
+  - Renderer draws regions draped on the terrain (`renderer/src/regions.ts`), with hover, selected, and locked styles.
+  - UI: Standard / Big Brained toggle; hovering a region shows its chance and reasons, or why it's locked; clicking inside picks the exact spot.
+  - Test hole has six hand-drawn regions.
+- **[todo]** Action point cost for Planned Shots (needs the shot clock), aim lines by skill, planned putts with basket zones.
 
 ## Already written (not yet wired up or tested)
 - **[done]** `packages/course-format/src/index.ts`

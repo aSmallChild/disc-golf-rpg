@@ -1,4 +1,11 @@
-import { COURSE_FORMAT_VERSION, type Course, type Hole, type Tree } from '@dgrpg/course-format';
+import {
+  COURSE_FORMAT_VERSION,
+  type Course,
+  type Hole,
+  type Region,
+  type Tree,
+  type Vec2,
+} from '@dgrpg/course-format';
 
 /** Temporary hand-built hole for the boilerplate. Replaced by files in /courses. */
 const columns = 41;
@@ -24,6 +31,59 @@ const trees: readonly Tree[] = [
   canopy: { radius: 3, base: 2.5, top: 10, density: 0.6 },
 }));
 
+/** Hand-drawn rings are octagons: enough to read as round, still easy to edit by hand. */
+const octagon = ([cx, cz]: Vec2, radius: number): readonly Vec2[] =>
+  Array.from({ length: 8 }, (_, index) => {
+    const angle = (index * Math.PI) / 4 + Math.PI / 8;
+    return [cx + Math.cos(angle) * radius, cz + Math.sin(angle) * radius] as const;
+  });
+
+/** Checked in order, so the small regions come before the ones they overlap. */
+const regions: readonly Region[] = [
+  { id: 'circle-1', label: 'Circle 1', polygon: octagon([40, 12], 10) },
+  { id: 'hill', label: 'Top of the hill', polygon: octagon([56, 70], 9) },
+  {
+    id: 'short',
+    label: 'Short of the basket',
+    polygon: [
+      [26, 24],
+      [54, 24],
+      [56, 44],
+      [24, 44],
+    ],
+  },
+  {
+    id: 'left',
+    label: 'Left of the pines',
+    polygon: [
+      [4, 46],
+      [15, 46],
+      [17, 100],
+      [6, 100],
+    ],
+  },
+  {
+    id: 'centre',
+    label: 'Fairway centre',
+    polygon: [
+      [28, 48],
+      [47, 48],
+      [45, 100],
+      [32, 100],
+    ],
+  },
+  {
+    id: 'layup',
+    label: 'Lay-up short',
+    polygon: [
+      [28, 106],
+      [52, 106],
+      [52, 126],
+      [28, 126],
+    ],
+  },
+];
+
 const hole: Hole = {
   id: 'test-1',
   par: 3,
@@ -44,7 +104,7 @@ const hole: Hole = {
     values: Array.from({ length: columns * rows }, () => 'fairway' as const),
   },
   trees,
-  regions: [],
+  regions,
 };
 
 export const testCourse: Course = {
