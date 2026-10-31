@@ -3,6 +3,15 @@
 Working plan for roadmap items 1–3 (from the chat on 2026-10-31). Basket model is done; this is what comes next.
 Status markers: **[done]** code exists, **[todo]** not started.
 
+## Progress (2026-10-31)
+- **[done]** Standard Shot: click to aim, release roll (clean / wobbly / shank), scatter, roll-out on slopes, out of bounds off the map edge (+1 penalty, replay from last lie). `sim/src/throw.ts`.
+- **[done]** Standard putt inside circle 1 (10 m): in / spit out / miss, tap-in under 1.5 m. `sim/src/putt.ts`.
+- **[done]** `apply(state, action) -> { state, events }` in `sim/src/round.ts`, with 23 unit tests on fixed seeds.
+- **[done]** Disc mesh (grows with camera distance so it stays visible), trail, flight playback following the sim's curve, camera follows the disc then settles behind the new lie.
+- **[done]** Roll breakdown panel: every reason, chance, roll, outcome, flavour text. Hole result in golf terms.
+- **[todo] Tree encounters.** Discs currently fly straight through trees. This is the next step.
+- **[todo]** Aim regions and Planned Shots ("Big Brained Shot"), basket zones.
+
 ## Already written (not yet wired up or tested)
 - **[done]** `packages/course-format/src/index.ts`
   - `Vec3` type.
@@ -47,7 +56,9 @@ Status markers: **[done]** code exists, **[todo]** not started.
 - Result panel: the roll breakdown (each reason + value), the rolled number vs the chance, and a short flavour line ("Wobbly release, clipped the pine and kicked left").
 - Stroke counter and hole result using `holeResultLabel`.
 
-## 2. Aim regions (VATS-style)
+## 2. Aim regions (Planned Shot)
+- A **Standard Shot** just picks a target and throws. A **Planned Shot** costs more action points (see `ideas/shot-clock.md`) and unlocks region selection, the per-region chance breakdown, and aim lines.
+- Planned Shots are unlocked by skill, separately for putts, upshots, and drives (by distance). For the prototype, the beginner profile has Planned Putt and Planned Upshot unlocked so both can be tested.
 - Hand-drawn polygons in the test hole (`regions` array): e.g. "Left of the pine", "Fairway centre", "Short of the hill", "Circle 1".
 - Renderer draws each region as a flat translucent overlay just above the terrain (draped on the heightmap), outlined.
 - **Hover**: raycast the pointer to the ground, find the region with `regionAt`, highlight it, and show a tooltip: success chance + top reasons.
@@ -76,4 +87,4 @@ Status markers: **[done]** code exists, **[todo]** not started.
 
 ## Known issues to fix along the way
 - The sun's shadow map covers the whole hole at 2048 px, so small objects (the basket) cast blurry blob shadows. Fix: tighten the shadow camera around the action, or use a second shadow-casting light near the camera.
-- From the tee the hill hides the basket. That's fine (a blind shot), but aim mode needs a way to see the target (e.g. a basket marker visible through terrain).
+- From the tee the hill hides the basket. That's fine (a blind shot), but a Planned Shot needs a way to see the target (e.g. a basket marker visible through terrain).

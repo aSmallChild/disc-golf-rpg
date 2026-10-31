@@ -16,4 +16,8 @@ export const palette = {
   sun: 0xfff3e0,
   ambientSky: 0xdfe6ea,
   ambientGround: 0x5b5446,
+  disc: 0xb4583c,
+  discTrail: 0xe6dcc8,
+  target: 0xe6dcc8,
+  aimLine: 0xe6dcc8,
 } as const;

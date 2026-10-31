@@ -13,7 +13,7 @@ packages/renderer/      Three.js scene, terrain, camera, choreography
 packages/bots/          bot players (sim only)
 courses/                hand-built course data
 ```
-Dependency direction: `game -> renderer, sim, course-format`; `renderer -> course-format`; `sim -> course-format`; `bots -> sim`. Never import upwards (e.g. `sim` must never import `renderer` or Svelte).
+Dependency direction: `game -> renderer, sim, course-format`; `renderer -> sim, course-format` (it replays the sim's flight curve and plays its events); `sim -> course-format`; `bots -> sim`. Never import upwards (e.g. `sim` must never import `renderer` or Svelte).
 
 Packages export TypeScript source directly (`"exports": { ".": "./src/index.ts" }`). No per-package build step.
 

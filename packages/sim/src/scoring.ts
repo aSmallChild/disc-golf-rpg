@@ -25,6 +25,10 @@ export const golfScoreLabel = (score: number): string => {
 export const formatScore = (score: number): string =>
   score === 0 ? 'E' : score > 0 ? `+${score}` : `${score}`;
 
-/** Label for a hole result relative to par, e.g. 4 strokes on a par 3 is "Bogey". */
+/** Label for a hole result relative to par, e.g. 4 strokes on a par 3 is "Bogey"; 8 is "+5". */
 export const holeResultLabel = (strokes: number, par: number): string =>
-  strokes === 1 ? 'Ace' : golfScoreLabel(strokes - par);
+  strokes === 1
+    ? 'Ace'
+    : Math.abs(strokes - par) > 3
+      ? formatScore(strokes - par)
+      : golfScoreLabel(strokes - par);
