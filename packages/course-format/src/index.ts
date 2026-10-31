@@ -47,7 +47,7 @@ export type Tree = {
   };
 };
 
-/** A hand-drawn, selectable aim region (VATS-style). */
+/** A hand-drawn, selectable aim region (used by Planned Shots). */
 export type Region = {
   readonly id: string;
   readonly label: string;

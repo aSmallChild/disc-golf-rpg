@@ -5,7 +5,7 @@
 |---|---|
 | Engine | **Three.js** (locked in). |
 | UI | **Svelte 5 + Vite** (locked in). No SvelteKit, no SSR. |
-| Camera | **Tilted**. Fallout 2 VATS-style aiming: hover selectable fairway regions, aim lines when skill allows. |
+| Camera | **Tilted**. **Planned Shot** (working name, inspired by Fallout 2's aimed shots): hover selectable fairway regions, aim lines when skill allows. Costs more action points than a Standard Shot, and is unlocked by skill. |
 | Simulation | **Outcome first, visuals second.** Dice decide what happens. Physics only makes it look convincing (section 2a). |
 | Art style | **Low detail**, slightly cartoonish shapes (like https://3d-golf-opus.vercel.app/), **real-life muted colours**. |
 | Scope order | **Single-player first**, built so multiplayer and bots can be added later (section 4). |
@@ -64,8 +64,8 @@ The game is not a physics simulation. Skill, gear, stats, conditions, and luck d
 - No edge cases where the physics contradicts the roll.
 - Bots and a future server only need step 1. Step 2 is cosmetic.
 
-## 2b. VATS-style aiming
-- The tilted camera shows the hole. Entering aim mode highlights **selectable regions** (fairway segments, landing zones, circle 1, basket zones) authored per hole.
+## 2b. Planned Shot (working name)
+- The tilted camera shows the hole. Choosing a Planned Shot highlights **selectable regions** (fairway segments, landing zones, circle 1, basket zones) authored per hole.
 - Hovering a region shows its success chance and a short breakdown, like Fallout 2's aimed shots.
 - **Lines**: some shots need a line, such as a gap between trees or hyzer around a cluster. The available lines depend on skill: low skill means fewer, wider, riskier options, and higher skill unlocks tighter lines and shot shapes.
 - The chosen region + line + shot type + disc becomes the `Action` sent to the simulation.
@@ -97,7 +97,7 @@ Low detail fits 3D well. A **low-poly, flat-shaded** look shows hills clearly wi
 
 ### Camera ideas for 3D
 - Default: top-down or slightly tilted (about 60°) orthographic view, which keeps the Fallout feel.
-- Aim mode: the player clicks a target on the terrain, and the game draws the planned flight line plus a scatter ellipse.
+- Planned Shot: the player clicks a target on the terrain, and the game draws the planned flight line plus a scatter ellipse.
 - Replay: the camera follows the disc at a low angle so the player can see why it clipped the tree.
 - A side-profile strip in the aim UI is still useful in 3D.
 

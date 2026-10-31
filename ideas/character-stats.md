@@ -5,7 +5,7 @@ related: [skill-tree.md, luck.md, nerve-meter.md, tilt-anger.md]
 ---
 # Character Stats
 
-Fallout SPECIAL style, but disc-golf appropriate. Stats feed into skills, and skills sit in a tree.
+Fallout-style attributes (strength, dexterity, etc.), but disc-golf appropriate. Stats feed into skills, and skills sit in a tree.
 
 ## User's notes
 - **Composure is an attribute (a player trait), not a skill.** Skills are affected by it.

@@ -6,9 +6,9 @@ inclusion: always
 Web-based, top-down, not-too-serious disc golf RPG. Hosted on the user's website via Cloudflare.
 
 ## Core pillars
-- **Indirect control**: the player picks intent (target point, shot type, disc), the character's stats/skills/gear decide the outcome. Inspired by Fallout 2 aimed shots (VATS-like targeting of fairway spots or basket zones).
+- **Indirect control**: the player picks intent (target point, shot type, disc), the character's stats/skills/gear decide the outcome. Inspired by Fallout 2 aimed shots (targeting of fairway spots or basket zones). Our names: **Standard Shot** and **Planned Shot** (code/docs name; shown to players as **"Big Brained Shot"**). A Planned Shot costs more action points (`ideas/shot-clock.md`) and is unlocked by skill, per putt, upshot, and drive (`ideas/aimed-shots.md`).
 - **Skill tree**: skills improve chances or unlock abilities; skills unlock other skills.
-- **Character stats**: Fallout SPECIAL-style, but disc-golf themed (see `ideas/character-stats.md`).
+- **Character stats**: Fallout-style attributes, but disc-golf themed (see `ideas/character-stats.md`).
 - **Luck is central**: both an attribute and a skill (concentrated luck, flukes).
 - **Nerves**: an overarching pressure meter. Stakes and expectation raise it. The **Composure** attribute, gear, skills, and layups/safe shots lower it (`ideas/nerve-meter.md`).
 - **Tilt and meltdowns**: frustration after bad shots builds tilt. At the top the character has a meltdown and must cool off (`ideas/tilt-anger.md`).

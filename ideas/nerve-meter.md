@@ -36,7 +36,7 @@ Added later:
 - This explains all of the user's sources with one rule, and the breakdown can show both parts.
 
 *(suggestion)* **Effects: nerves change variance, not just the chance.**
-- High nerves widen the aim scatter ellipse and make the VATS reticle **shake** on screen. The player sees nerves before throwing.
+- High nerves widen the aim scatter ellipse and make the aim reticle **shake** on screen. The player sees nerves before throwing.
 - Some upside: adrenaline adds a little distance on drives, but costs precision on putts and approaches. That makes nerves a trade-off instead of a pure penalty.
 - Special outcomes at the extremes: **choke** (very high nerves on a putt) and **clutch** (making a high-nerve putt gives a big nerve drop and a small luck bonus for the next shot).
 
@@ -62,7 +62,7 @@ Added later:
 - It gives cosmetic gear (hat, sunglasses) a real reason to exist.
 - Cheap gear lowering nerves is funny and fits the tone. It also creates a good choice: better discs versus lower expectations.
 - It fits progression well. A new player plays casual rounds with almost no nerves, so the mechanic appears on its own once they start doing well. It doesn't need a tutorial.
-- Nerves visible in the VATS shake and the breakdown make it a challenge the player can plan around.
+- Nerves visible in the reticle shake and the breakdown make it a challenge the player can plan around.
 
 **Risks**
 - **Punishing success.** If nerves are too strong, doing well feels bad (rubber-banding). Keep the effect moderate, mostly on variance, and always offer a counter. The player should feel pressure, not feel robbed.

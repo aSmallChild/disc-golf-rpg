@@ -28,7 +28,7 @@ See `docs/plan.md` for options and reasoning. Update this file when the user mak
   - The renderer choreographs a believable flight path that passes through each event's contact point, with real visual contact with the tree's trunk or canopy volume.
   - Trees have separate trunk and canopy volumes with different effects.
   - The visual path comes from the events + seed, so it is deterministic.
-- **Camera: tilted.** VATS-style aiming with hoverable regions and, depending on skill, aimable lines.
+- **Camera: tilted.** Planned Shot (working name) with hoverable regions and, depending on skill, aimable lines. Standard Shot is always available.
 - **Courses are built by hand first.** One versioned course format is shared by hand-edited files, the in-game editor, and any future generator. Aim regions are hand-drawn per hole. Generation is a nice-to-have, so don't build it unless asked.
 - Eventual deploy target: Cloudflare (Workers static assets, Durable Objects, D1).
 

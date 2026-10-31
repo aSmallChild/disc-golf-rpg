@@ -26,13 +26,13 @@ Only confirmed (`accepted`) ideas get tags. Add new tags here when needed.
 | [nerve-meter.md](nerve-meter.md) | accepted | overarching-mechanic | Pressure rises with stakes and expectation; Composure resists it |
 | [tilt-anger.md](tilt-anger.md) | accepted | overarching-mechanic | Tilt after bad shots, meltdowns, cooling off |
 | [skill-scoring.md](skill-scoring.md) | accepted | overarching-mechanic | Skills use golf scoring, start above par (bad) |
-| [aimed-shots.md](aimed-shots.md) | accepted | core-loop | VATS-style targeting of regions, lines, basket zones |
+| [aimed-shots.md](aimed-shots.md) | accepted | core-loop | Standard Shot vs Planned Shot (unlocked per putt, upshot, drive) |
+| [shot-clock.md](shot-clock.md) | accepted | core-loop | 30-second clock as action points; Planned Shot costs more |
 | [skill-feedback.md](skill-feedback.md) | accepted | core-loop | Explain why each roll succeeded or failed |
 | [course-generation.md](course-generation.md) | accepted | content-pipeline | Hand-designed courses now, generation later |
 | [shot-types.md](shot-types.md) | draft | | Spike hyzer, tombstone, roller, etc. |
-| [character-stats.md](character-stats.md) | draft | | Disc-golf version of SPECIAL (Composure confirmed as an attribute) |
+| [character-stats.md](character-stats.md) | draft | | Disc-golf character attributes (Composure confirmed as an attribute) |
 | [skill-tree.md](skill-tree.md) | draft | | Skills improve chances or unlock abilities |
-| [shot-clock.md](shot-clock.md) | draft | | Time limit per throw, time extensions |
 | [gear-chalk-bag.md](gear-chalk-bag.md) | draft | | Grip, spin, wind reading, anger management |
 | [gear-disc-retriever.md](gear-disc-retriever.md) | draft | | Telescopic retriever stick, disc recovery |
 | [gear-sunglasses.md](gear-sunglasses.md) | draft | | Sun accuracy, night penalty, hides your face |
